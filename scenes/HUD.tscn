@@ -1,0 +1,74 @@
+[gd_scene load_steps=2 format=3 uid="uid://dcc0bp1gjlt7l"]
+
+[ext_resource type="Script" path="res://scripts/HUD.gd" id="1_hud_script"]
+
+[node name="HUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_hud_script")
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 472.0
+offset_bottom = 36.0
+theme_override_constants/separation = 16
+mouse_filter = 2
+
+[node name="CoinsLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+text = "Coins: 0"
+
+[node name="GemsLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+text = "Gems: 0"
+
+[node name="BottomBar" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 720.0
+offset_right = 472.0
+offset_bottom = 846.0
+theme_override_constants/separation = 6
+
+[node name="UpgradePickButton" type="Button" parent="BottomBar"]
+layout_mode = 2
+text = "Upgrade Pickaxe"
+
+[node name="PickLabel" type="Label" parent="BottomBar/UpgradePickButton"]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 2.0
+offset_right = 240.0
+offset_bottom = 26.0
+text = "Pick Lv1 (Next: 50)"
+
+[node name="ButtonsRow" type="HBoxContainer" parent="BottomBar"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CoinBoostButton" type="Button" parent="BottomBar/ButtonsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Coin Boost (5 gems)"
+
+[node name="LuckyBoostButton" type="Button" parent="BottomBar/ButtonsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Lucky (8 gems)"
+
+[node name="BasicEggButton" type="Button" parent="BottomBar/ButtonsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Basic Egg (50 coins)"
+
+[connection signal="pressed" from="BottomBar/UpgradePickButton" to="." method="_on_upgrade_pick_pressed"]
+[connection signal="pressed" from="BottomBar/ButtonsRow/CoinBoostButton" to="." method="_on_coin_boost_pressed"]
+[connection signal="pressed" from="BottomBar/ButtonsRow/LuckyBoostButton" to="." method="_on_lucky_boost_pressed"]
+[connection signal="pressed" from="BottomBar/ButtonsRow/BasicEggButton" to="." method="_on_basic_egg_pressed"]

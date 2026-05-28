@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3 uid="uid://dcc0bp1gjl14m"]
+
+[ext_resource type="Script" path="res://scripts/Ore.gd" id="1_ore_script"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ore"]
+size = Vector2(40, 40)
+
+[node name="Ore" type="Node2D"]
+script = ExtResource("1_ore_script")
+
+[node name="OreSprite" type="Sprite2D" parent="."]
+position = Vector2(0, -8)
+
+[node name="ClickArea" type="Area2D" parent="."]
+input_pickable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea"]
+position = Vector2(0, -8)
+shape = SubResource("RectangleShape2D_ore")
+
+[node name="HPBar" type="ProgressBar" parent="."]
+offset_left = -20.0
+offset_top = -34.0
+offset_right = 20.0
+offset_bottom = -26.0
+max_value = 100.0
+value = 100.0
+show_percentage = false

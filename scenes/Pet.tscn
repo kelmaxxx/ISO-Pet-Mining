@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://dcc0bp1gjl2q2"]
+
+[ext_resource type="Script" path="res://scripts/Pet.gd" id="1_pet_script"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_pet"]
+radius = 5.0
+height = 12.0
+
+[node name="Pet" type="CharacterBody2D"]
+script = ExtResource("1_pet_script")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_pet")
