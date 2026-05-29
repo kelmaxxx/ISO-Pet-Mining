@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://dcc0bp1gjlt7l"]
 
-[ext_resource type="Script" path="res://scripts/HUD.gd" id="1_hud_script"]
+[ext_resource type="Script" path="res://scripts/HUD.cs" id="1_hud_script"]
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -68,7 +68,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Basic Egg (50 coins)"
 
-[connection signal="pressed" from="BottomBar/UpgradePickButton" to="." method="_on_upgrade_pick_pressed"]
-[connection signal="pressed" from="BottomBar/ButtonsRow/CoinBoostButton" to="." method="_on_coin_boost_pressed"]
-[connection signal="pressed" from="BottomBar/ButtonsRow/LuckyBoostButton" to="." method="_on_lucky_boost_pressed"]
-[connection signal="pressed" from="BottomBar/ButtonsRow/BasicEggButton" to="." method="_on_basic_egg_pressed"]
+[connection signal="pressed" from="BottomBar/UpgradePickButton" to="." method="OnUpgradePickPressed"]
+[connection signal="pressed" from="BottomBar/ButtonsRow/CoinBoostButton" to="." method="OnCoinBoostPressed"]
+[connection signal="pressed" from="BottomBar/ButtonsRow/LuckyBoostButton" to="." method="OnLuckyBoostPressed"]
+[connection signal="pressed" from="BottomBar/ButtonsRow/BasicEggButton" to="." method="OnBasicEggPressed"]

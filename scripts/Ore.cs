@@ -1,10 +1,6 @@
 using Godot;
 using Godot.Collections;
-using System.Threading.Tasks;
 
-// C# equivalent of Ore.gd — kept side-by-side for learning.
-// The scene Ore.tscn still points at Ore.gd; switch it in the editor
-// (Inspector > Script) when you want to try this version live.
 public partial class Ore : Node2D
 {
 	[Signal]
@@ -20,16 +16,11 @@ public partial class Ore : Node2D
 	private ProgressBar _hpBar;
 	private Area2D _clickArea;
 
-	// GameManager is still GDScript, so we talk to it through Variant Call/Get.
-	// Once GameManager.gd is migrated, this becomes a typed field.
-	private Node _gameManager;
-
 	public override void _Ready()
 	{
 		_oreSprite = GetNode<Sprite2D>("OreSprite");
 		_hpBar = GetNode<ProgressBar>("HPBar");
 		_clickArea = GetNode<Area2D>("ClickArea");
-		_gameManager = GetNode("/root/GameManager");
 
 		_clickArea.InputPickable = true;
 		_clickArea.InputEvent += OnClick;
@@ -64,7 +55,7 @@ public partial class Ore : Node2D
 		if (IsDead) return;
 
 		float dmg = amount;
-		if (_gameManager.Call("is_lucky").AsBool() && GD.Randf() < 0.25f)
+		if (GameManager.Instance.IsLucky() && GD.Randf() < 0.25f)
 			dmg *= 2;
 
 		CurrentHp = Mathf.Max(0f, CurrentHp - dmg);
@@ -82,19 +73,18 @@ public partial class Ore : Node2D
 		tween.TweenProperty(this, "position:x", baseX, 0.05);
 	}
 
-	private async Task BreakAndRespawn()
+	private async System.Threading.Tasks.Task BreakAndRespawn()
 	{
 		IsDead = true;
 
-		bool coinBoost = _gameManager.Get("coin_boost").AsBool();
-		int pickaxeLevel = _gameManager.Get("pickaxe_level").AsInt32();
-		int bonus = coinBoost ? 2 : 1;
-		int amount = (int)(OreData["amount"].AsSingle() * (1f + pickaxeLevel * 0.4f) * bonus);
+		var gm = GameManager.Instance;
+		int bonus = gm.CoinBoost ? 2 : 1;
+		int amount = (int)(OreData["amount"].AsSingle() * (1f + gm.PickaxeLevel * 0.4f) * bonus);
 
 		if (OreData["reward"].AsString() == "gems")
-			_gameManager.Call("add_gems", amount);
+			gm.AddGems(amount);
 		else
-			_gameManager.Call("add_coins", amount);
+			gm.AddCoins(amount);
 
 		Visible = false;
 		await ToSignal(GetTree().CreateTimer(GD.RandRange(3.0, 6.0)), SceneTreeTimer.SignalName.Timeout);

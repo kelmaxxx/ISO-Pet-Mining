@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://dcc0bp1gjl2q2"]
 
-[ext_resource type="Script" path="res://scripts/Pet.gd" id="1_pet_script"]
+[ext_resource type="Script" path="res://scripts/Pet.cs" id="1_pet_script"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_pet"]
 radius = 5.0

@@ -8,22 +8,30 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="ISO Mining X Game"
 run/main_scene="res://scenes/World.tscn"
-config/features=PackedStringArray("4.5", "GL Compatibility")
+config/features=PackedStringArray("4.6", "C#", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
-GameManager="*res://scripts/GameManager.gd"
+GameManager="*res://scripts/GameManager.cs"
 
 [display]
 
 window/size/viewport_width=480
 window/size/viewport_height=854
 window/stretch/mode="canvas_items"
+
+[dotnet]
+
+project/assembly_name="ISO Mining X Game"
 
 [rendering]
 
