@@ -44,6 +44,10 @@ public partial class World : Node2D
 	private Node _characterNode;
 	private readonly List<Ore> _oreNodes = new();
 
+	// Ore types whose texture file actually exists on disk. Built once at startup
+	// so we never roll an ore we can't draw (which would just spawn nothing).
+	private readonly List<string> _availableOreTypes = new();
+
 	// Tracks which grid cells are taken (buildings, character, live ores) so
 	// ores never respawn on top of something.
 	private readonly HashSet<Vector2I> _occupiedCells = new();
@@ -70,11 +74,27 @@ public partial class World : Node2D
 	public override void _Ready()
 	{
 		GD.Randomize();
+		BuildAvailableOreTypes();
 		BuildTerrain();
 		SpawnBuildings();
 		SpawnOres();
 		SpawnCharacter();
 		GD.Print("Game Started");
+	}
+
+	// Figure out which ore types we can actually display. Anything missing its
+	// PNG is left out so it never gets rolled. Add the texture file later and it
+	// joins the pool automatically — no code change needed.
+	private void BuildAvailableOreTypes()
+	{
+		_availableOreTypes.Clear();
+		foreach (var kv in OreDataTable)
+		{
+			if (ResourceLoader.Exists(kv.Value.Texture))
+				_availableOreTypes.Add(kv.Key);
+		}
+		if (_availableOreTypes.Count == 0)
+			GD.PushWarning("No ore textures found in assets/ores/ — no ores will spawn.");
 	}
 
 	private Vector2 GridToScreen(int col, int row)
@@ -247,14 +267,22 @@ public partial class World : Node2D
 
 	private string RollOreType()
 	{
-		float r = GD.Randf();
+		if (_availableOreTypes.Count == 0) return "";
+
+		// Roll only among ore types we can actually draw, weighted by their Chance
+		// and renormalized so the odds always sum to 1 (an ore is always chosen).
+		float total = 0f;
+		foreach (var type in _availableOreTypes)
+			total += OreDataTable[type].Chance;
+
+		float r = GD.Randf() * total;
 		float cum = 0f;
-		foreach (var kv in OreDataTable)
+		foreach (var type in _availableOreTypes)
 		{
-			cum += kv.Value.Chance;
-			if (r < cum) return kv.Key;
+			cum += OreDataTable[type].Chance;
+			if (r < cum) return type;
 		}
-		return "";
+		return _availableOreTypes[_availableOreTypes.Count - 1];
 	}
 
 	private string WeightedRandom(string[] items, float[] weights)
