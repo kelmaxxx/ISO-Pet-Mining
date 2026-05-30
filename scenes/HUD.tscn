@@ -29,46 +29,145 @@ text = "Coins: 0"
 layout_mode = 2
 text = "Gems: 0"
 
-[node name="BottomBar" type="VBoxContainer" parent="."]
-layout_mode = 0
-offset_left = 8.0
-offset_top = 720.0
-offset_right = 472.0
-offset_bottom = 846.0
-theme_override_constants/separation = 6
+[node name="ShopPopup" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="UpgradePickButton" type="Button" parent="BottomBar"]
+[node name="Dimmer" type="ColorRect" parent="ShopPopup"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="CenterContainer" type="CenterContainer" parent="ShopPopup"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="ShopPopup/CenterContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ShopPopup/CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Shop"
+horizontal_alignment = 1
+
+[node name="UpgradePickButton" type="Button" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 44)
 layout_mode = 2
 text = "Upgrade Pickaxe"
 
-[node name="PickLabel" type="Label" parent="BottomBar/UpgradePickButton"]
+[node name="PickLabel" type="Label" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/UpgradePickButton"]
 layout_mode = 0
 offset_left = 8.0
-offset_top = 2.0
-offset_right = 240.0
-offset_bottom = 26.0
+offset_top = 24.0
+offset_right = 232.0
+offset_bottom = 42.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 11
 text = "Pick Lv1 (Next: 50)"
 
-[node name="ButtonsRow" type="HBoxContainer" parent="BottomBar"]
+[node name="CoinBoostButton" type="Button" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 36)
 layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="CoinBoostButton" type="Button" parent="BottomBar/ButtonsRow"]
-layout_mode = 2
-size_flags_horizontal = 3
 text = "Coin Boost (5 gems)"
 
-[node name="LuckyBoostButton" type="Button" parent="BottomBar/ButtonsRow"]
+[node name="LuckyBoostButton" type="Button" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 36)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Lucky (8 gems)"
+text = "Lucky Boost (8 gems)"
 
-[node name="BasicEggButton" type="Button" parent="BottomBar/ButtonsRow"]
+[node name="CloseButton" type="Button" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 32)
 layout_mode = 2
-size_flags_horizontal = 3
+text = "Close"
+
+[node name="HatchPopup" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dimmer" type="ColorRect" parent="HatchPopup"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="CenterContainer" type="CenterContainer" parent="HatchPopup"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HatchPopup/CenterContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HatchPopup/CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HatchPopup/CenterContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="HatchPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Hatchery"
+horizontal_alignment = 1
+
+[node name="BasicEggButton" type="Button" parent="HatchPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 40)
+layout_mode = 2
 text = "Basic Egg (50 coins)"
 
-[connection signal="pressed" from="BottomBar/UpgradePickButton" to="." method="OnUpgradePickPressed"]
-[connection signal="pressed" from="BottomBar/ButtonsRow/CoinBoostButton" to="." method="OnCoinBoostPressed"]
-[connection signal="pressed" from="BottomBar/ButtonsRow/LuckyBoostButton" to="." method="OnLuckyBoostPressed"]
-[connection signal="pressed" from="BottomBar/ButtonsRow/BasicEggButton" to="." method="OnBasicEggPressed"]
+[node name="GemEggButton" type="Button" parent="HatchPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 40)
+layout_mode = 2
+text = "Gem Egg (10 gems)"
+
+[node name="CloseButton" type="Button" parent="HatchPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 32)
+layout_mode = 2
+text = "Close"
+
+[connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/UpgradePickButton" to="." method="OnUpgradePickPressed"]
+[connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CoinBoostButton" to="." method="OnCoinBoostPressed"]
+[connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LuckyBoostButton" to="." method="OnLuckyBoostPressed"]
+[connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton" to="." method="OnCloseShop"]
+[connection signal="pressed" from="HatchPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BasicEggButton" to="." method="OnBasicEggPressed"]
+[connection signal="pressed" from="HatchPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GemEggButton" to="." method="OnGemEggPressed"]
+[connection signal="pressed" from="HatchPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton" to="." method="OnCloseHatch"]

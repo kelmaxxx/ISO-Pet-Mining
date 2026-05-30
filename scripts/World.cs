@@ -13,11 +13,12 @@ public partial class World : Node2D
 	private static readonly PackedScene OreScene = GD.Load<PackedScene>("res://scenes/Ore.tscn");
 	private static readonly PackedScene CharacterScene = GD.Load<PackedScene>("res://scenes/Character.tscn");
 	private static readonly PackedScene PetScene = GD.Load<PackedScene>("res://scenes/Pet.tscn");
+	private static readonly PackedScene BuildingScene = GD.Load<PackedScene>("res://scenes/Building.tscn");
 
 	private static readonly System.Collections.Generic.Dictionary<string, string> TerrainPaths = new()
 	{
 		["grass"] = "res://assets/terrain/terrain_grass.png",
-		["dirt"]  = "res://assets/terrain/terrain_dirt.png",
+		["dirt"] = "res://assets/terrain/terrain_dirt.png",
 		["stone"] = "res://assets/terrain/terrain_stone.png",
 	};
 
@@ -32,23 +33,48 @@ public partial class World : Node2D
 
 	private static readonly System.Collections.Generic.Dictionary<string, OreInfo> OreDataTable = new()
 	{
-		["coal"]    = new OreInfo { Hp = 40,  Reward = "coins", Amount = 8,  Chance = 0.22f, Texture = "res://assets/ores/ore_coal.png" },
-		["iron"]    = new OreInfo { Hp = 80,  Reward = "coins", Amount = 25, Chance = 0.16f, Texture = "res://assets/ores/ore_iron.png" },
-		["gold"]    = new OreInfo { Hp = 130, Reward = "coins", Amount = 80, Chance = 0.10f, Texture = "res://assets/ores/ore_gold.png" },
-		["crystal"] = new OreInfo { Hp = 100, Reward = "gems",  Amount = 3,  Chance = 0.07f, Texture = "res://assets/ores/ore_crystal.png" },
-		["ruby"]    = new OreInfo { Hp = 200, Reward = "gems",  Amount = 10, Chance = 0.04f, Texture = "res://assets/ores/ore_ruby.png" },
+		["coal"] = new OreInfo { Hp = 40, Reward = "coins", Amount = 8, Chance = 0.22f, Texture = "res://assets/ores/ore_coal.png" },
+		["iron"] = new OreInfo { Hp = 80, Reward = "coins", Amount = 25, Chance = 0.16f, Texture = "res://assets/ores/ore_iron.png" },
+		["gold"] = new OreInfo { Hp = 130, Reward = "coins", Amount = 80, Chance = 0.10f, Texture = "res://assets/ores/ore_gold.png" },
+		["crystal"] = new OreInfo { Hp = 100, Reward = "gems", Amount = 3, Chance = 0.07f, Texture = "res://assets/ores/ore_crystal.png" },
+		["ruby"] = new OreInfo { Hp = 200, Reward = "gems", Amount = 10, Chance = 0.04f, Texture = "res://assets/ores/ore_ruby.png" },
 	};
 
 	private readonly System.Collections.Generic.Dictionary<string, Texture2D> _terrainCache = new();
 	private Node _characterNode;
 	private readonly List<Ore> _oreNodes = new();
 
+	// Tracks which grid cells are taken (buildings, character, live ores) so
+	// ores never respawn on top of something.
+	private readonly HashSet<Vector2I> _occupiedCells = new();
+	private static readonly Vector2I CharacterCell = new(Cols / 2, Rows / 2);
+
+	private struct BuildingDef
+	{
+		public int Col;
+		public int Row;
+		public string Type;
+		public string Label;
+		public string Texture;
+		public Color Color;
+	}
+
+	// Add or edit buildings here. Texture is optional — if the file is missing
+	// a colored placeholder with the label is shown instead.
+	private static readonly BuildingDef[] BuildingDefs =
+	{
+		new BuildingDef { Col = 1, Row = 1, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
+		new BuildingDef { Col = 6, Row = 1, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
+	};
+
 	public override void _Ready()
 	{
 		GD.Randomize();
 		BuildTerrain();
+		SpawnBuildings();
 		SpawnOres();
 		SpawnCharacter();
+		GD.Print("Game Started");
 	}
 
 	private Vector2 GridToScreen(int col, int row)
@@ -112,6 +138,8 @@ public partial class World : Node2D
 		{
 			for (int col = 0; col < Cols; col++)
 			{
+				var cell = new Vector2I(col, row);
+				if (_occupiedCells.Contains(cell)) continue;
 				if (GD.Randf() >= 0.35f) continue;
 
 				string oreType = RollOreType();
@@ -128,18 +156,78 @@ public partial class World : Node2D
 
 				var data = new Dictionary
 				{
-					["hp"]      = info.Hp,
-					["reward"]  = info.Reward,
-					["amount"]  = info.Amount,
-					["chance"]  = info.Chance,
+					["hp"] = info.Hp,
+					["reward"] = info.Reward,
+					["amount"] = info.Amount,
+					["chance"] = info.Chance,
 					["texture"] = info.Texture,
 				};
 				ore.Setup(oreType, data);
+				ore.Cell = cell;
+				ore.World = this;
 				ore.AddToGroup("ores");
 				ore.OreClicked += OnOreClicked;
 				_oreNodes.Add(ore);
+				_occupiedCells.Add(cell);
 			}
 		}
+	}
+
+	private void SpawnBuildings()
+	{
+		// Reserve the character's home cell so nothing else lands on it.
+		_occupiedCells.Add(CharacterCell);
+
+		var objectLayer = GetNode<Node2D>("ObjectLayer");
+		foreach (var def in BuildingDefs)
+		{
+			var cell = new Vector2I(def.Col, def.Row);
+			_occupiedCells.Add(cell);
+
+			var building = BuildingScene.Instantiate<Building>();
+			var pos = GridToScreen(def.Col, def.Row);
+			building.Position = new Vector2(pos.X, pos.Y - 8);
+			objectLayer.AddChild(building);
+			building.Setup(def.Type, def.Label, def.Texture, def.Color);
+			building.BuildingClicked += OnBuildingClicked;
+		}
+	}
+
+	private void OnBuildingClicked(string buildingType)
+	{
+		var hud = GetNodeOrNull<HUD>("UI/HUD");
+		if (hud == null) return;
+
+		if (buildingType == "shop")
+			hud.OpenShop();
+		else if (buildingType == "hatchery")
+			hud.OpenHatchery();
+	}
+
+	// Called by an Ore when it is mined out. Frees its old cell, picks a random
+	// free cell elsewhere on the grid, and returns the screen position to move to.
+	public Vector2 RequestRespawnPosition(Ore ore)
+	{
+		_occupiedCells.Remove(ore.Cell);
+
+		var freeCells = new List<Vector2I>();
+		for (int row = 0; row < Rows; row++)
+			for (int col = 0; col < Cols; col++)
+			{
+				var cell = new Vector2I(col, row);
+				if (!_occupiedCells.Contains(cell))
+					freeCells.Add(cell);
+			}
+
+		Vector2I chosen = freeCells.Count > 0
+			? freeCells[(int)(GD.Randi() % (uint)freeCells.Count)]
+			: ore.Cell;
+
+		_occupiedCells.Add(chosen);
+		ore.Cell = chosen;
+
+		var pos = GridToScreen(chosen.X, chosen.Y);
+		return new Vector2(pos.X, pos.Y - 16);
 	}
 
 	private void SpawnCharacter()

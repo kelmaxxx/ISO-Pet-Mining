@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3 uid="uid://bldmnx0shop01"]
+
+[ext_resource type="Script" path="res://scripts/Building.cs" id="1_building"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bld"]
+size = Vector2(44, 44)
+
+[node name="Building" type="Node2D"]
+script = ExtResource("1_building")
+
+[node name="BuildingSprite" type="Sprite2D" parent="."]
+visible = false
+position = Vector2(0, -22)
+
+[node name="Placeholder" type="ColorRect" parent="."]
+offset_left = -22.0
+offset_top = -44.0
+offset_right = 22.0
+offset_bottom = 0.0
+mouse_filter = 2
+color = Color(0.4, 0.35, 0.62, 1)
+
+[node name="NameLabel" type="Label" parent="."]
+offset_left = -48.0
+offset_top = -64.0
+offset_right = 48.0
+offset_bottom = -46.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+text = "Shop"
+horizontal_alignment = 1
+
+[node name="ClickArea" type="Area2D" parent="."]
+input_pickable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea"]
+position = Vector2(0, -22)
+shape = SubResource("RectangleShape2D_bld")

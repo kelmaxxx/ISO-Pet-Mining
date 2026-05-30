@@ -31,7 +31,7 @@ window/stretch/mode="canvas_items"
 
 [dotnet]
 
-project/assembly_name="ISO Mining X Game"
+project/assembly_name="IsoMiningXGame"
 
 [rendering]
 
