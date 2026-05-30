@@ -9,8 +9,16 @@ public partial class GameManager : Node
 	public int Coins { get; private set; } = 0;
 	public int Gems { get; private set; } = 0;
 
-	public int PickaxeLevel { get; private set; } = 1;
-	public int PickaxeCost { get; private set; } = 50;
+	// --- Prestige / Rebirth (PS99-style) ---
+	// Damage and coin rewards scale with the prestige multiplier. Rebirthing wipes
+	// your coins but permanently raises the multiplier. Gems and pets are KEPT.
+	public int PrestigeLevel { get; private set; } = 0;
+	public int PrestigeCost { get; private set; } = 1000;
+	public float PrestigeMultiplier => 1f + PrestigeLevel * 0.5f;
+
+	// Flat damage knobs — there is no pickaxe level anymore. Damage = clicks + pets.
+	private const float BaseClickDamage = 6f;
+	private const float PetDpsFactor = 0.5f;
 
 	public Array<Dictionary> EquippedPets { get; private set; } = new();
 	public int MaxPets { get; private set; } = 5;
@@ -23,7 +31,7 @@ public partial class GameManager : Node
 	[Signal] public delegate void CoinsChangedEventHandler(int amount);
 	[Signal] public delegate void GemsChangedEventHandler(int amount);
 	[Signal] public delegate void PetAddedEventHandler(Dictionary petData);
-	[Signal] public delegate void PickaxeUpgradedEventHandler(int level, int nextCost);
+	[Signal] public delegate void PrestigeChangedEventHandler(int level, float multiplier, int nextCost);
 
 	public override void _EnterTree()
 	{
@@ -72,19 +80,22 @@ public partial class GameManager : Node
 		return false;
 	}
 
-	public bool UpgradePickaxe()
+	// Rebirth: wipe coins for a permanent multiplier. Keeps gems + pets, PS99-style.
+	public bool Prestige()
 	{
-		if (SpendCoins(PickaxeCost))
-		{
-			PickaxeLevel += 1;
-			PickaxeCost = (int)(PickaxeCost * 2.2);
-			EmitSignal(SignalName.PickaxeUpgraded, PickaxeLevel, PickaxeCost);
-			return true;
-		}
-		return false;
+		if (Coins < PrestigeCost) return false;
+		Coins = 0;
+		PrestigeLevel += 1;
+		PrestigeCost = (int)(PrestigeCost * 3);
+		EmitSignal(SignalName.CoinsChanged, Coins);
+		EmitSignal(SignalName.PrestigeChanged, PrestigeLevel, PrestigeMultiplier, PrestigeCost);
+		return true;
 	}
 
-	public float GetClickDamage() => PickaxeLevel * 6.0f;
+	// Damage comes only from clicks and pets now, scaled by the prestige multiplier.
+	public float GetClickDamage() => BaseClickDamage * PrestigeMultiplier;
+
+	public float GetPetDamage(float power) => power * PetDpsFactor * PrestigeMultiplier;
 
 	public float GetPetDps()
 	{
@@ -94,7 +105,7 @@ public partial class GameManager : Node
 			if (pet.TryGetValue("power", out var p))
 				total += p.AsSingle();
 		}
-		return total * PickaxeLevel * 0.3f;
+		return total * PetDpsFactor * PrestigeMultiplier;
 	}
 
 	public bool ActivateCoinBoost()

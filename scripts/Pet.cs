@@ -53,7 +53,7 @@ public partial class Pet : CharacterBody2D
 				_attackTimer = 0f;
 				SafePlay("attack");
 				float power = PetData.TryGetValue("power", out var p) ? p.AsSingle() : 5f;
-				TargetOre.TakeDamage(power * GameManager.Instance.PickaxeLevel * 0.3f);
+				TargetOre.TakeDamage(GameManager.Instance.GetPetDamage(power));
 			}
 		}
 	}

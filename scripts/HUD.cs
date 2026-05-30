@@ -5,19 +5,21 @@ public partial class HUD : Control
 {
 	private Label _coinsLabel;
 	private Label _gemsLabel;
-	private Label _pickLabel;
+	private Label _prestigeLabel;
+	private Label _prestigeCostLabel;
 
 	private Control _shopPopup;
 	private Control _hatchPopup;
 
-	private const string PickLabelPath =
-		"ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/UpgradePickButton/PickLabel";
+	private const string PrestigeCostLabelPath =
+		"ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PrestigeButton/PrestigeCostLabel";
 
 	public override void _Ready()
 	{
 		_coinsLabel = GetNode<Label>("TopBar/CoinsLabel");
 		_gemsLabel = GetNode<Label>("TopBar/GemsLabel");
-		_pickLabel = GetNode<Label>(PickLabelPath);
+		_prestigeLabel = GetNode<Label>("TopBar/PrestigeLabel");
+		_prestigeCostLabel = GetNode<Label>(PrestigeCostLabelPath);
 
 		_shopPopup = GetNode<Control>("ShopPopup");
 		_hatchPopup = GetNode<Control>("HatchPopup");
@@ -27,11 +29,11 @@ public partial class HUD : Control
 		var gm = GameManager.Instance;
 		gm.CoinsChanged += UpdateCoins;
 		gm.GemsChanged += UpdateGems;
-		gm.PickaxeUpgraded += UpdatePick;
+		gm.PrestigeChanged += UpdatePrestige;
 
 		UpdateCoins(gm.Coins);
 		UpdateGems(gm.Gems);
-		UpdatePick(gm.PickaxeLevel, gm.PickaxeCost);
+		UpdatePrestige(gm.PrestigeLevel, gm.PrestigeMultiplier, gm.PrestigeCost);
 	}
 
 	private void UpdateCoins(int amount)
@@ -44,9 +46,10 @@ public partial class HUD : Control
 		_gemsLabel.Text = $"Gems: {amount}";
 	}
 
-	private void UpdatePick(int level, int nextCost)
+	private void UpdatePrestige(int level, float multiplier, int nextCost)
 	{
-		_pickLabel.Text = $"Pick Lv{level} (Next: {nextCost})";
+		_prestigeLabel.Text = $"Prestige {level} (x{multiplier:0.0})";
+		_prestigeCostLabel.Text = $"Rebirth: {nextCost} coins";
 	}
 
 	// ----- opened by buildings in the world -----
@@ -75,9 +78,9 @@ public partial class HUD : Control
 
 	// ----- shop buttons -----
 
-	public void OnUpgradePickPressed()
+	public void OnPrestigePressed()
 	{
-		GameManager.Instance.UpgradePickaxe();
+		GameManager.Instance.Prestige();
 	}
 
 	public void OnCoinBoostPressed()

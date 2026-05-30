@@ -13,11 +13,14 @@ mouse_filter = 2
 script = ExtResource("1_hud_script")
 
 [node name="TopBar" type="HBoxContainer" parent="."]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
 offset_left = 8.0
 offset_top = 8.0
-offset_right = 472.0
+offset_right = -8.0
 offset_bottom = 36.0
+grow_horizontal = 2
 theme_override_constants/separation = 16
 mouse_filter = 2
 
@@ -28,6 +31,10 @@ text = "Coins: 0"
 [node name="GemsLabel" type="Label" parent="TopBar"]
 layout_mode = 2
 text = "Gems: 0"
+
+[node name="PrestigeLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+text = "Prestige 0 (x1.0)"
 
 [node name="ShopPopup" type="Control" parent="."]
 visible = false
@@ -74,12 +81,12 @@ layout_mode = 2
 text = "Shop"
 horizontal_alignment = 1
 
-[node name="UpgradePickButton" type="Button" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="PrestigeButton" type="Button" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(240, 44)
 layout_mode = 2
-text = "Upgrade Pickaxe"
+text = "Rebirth / Prestige"
 
-[node name="PickLabel" type="Label" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/UpgradePickButton"]
+[node name="PrestigeCostLabel" type="Label" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PrestigeButton"]
 layout_mode = 0
 offset_left = 8.0
 offset_top = 24.0
@@ -87,7 +94,7 @@ offset_right = 232.0
 offset_bottom = 42.0
 mouse_filter = 2
 theme_override_font_sizes/font_size = 11
-text = "Pick Lv1 (Next: 50)"
+text = "Rebirth: 1000 coins"
 
 [node name="CoinBoostButton" type="Button" parent="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(240, 36)
@@ -164,7 +171,7 @@ custom_minimum_size = Vector2(240, 32)
 layout_mode = 2
 text = "Close"
 
-[connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/UpgradePickButton" to="." method="OnUpgradePickPressed"]
+[connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PrestigeButton" to="." method="OnPrestigePressed"]
 [connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CoinBoostButton" to="." method="OnCoinBoostPressed"]
 [connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LuckyBoostButton" to="." method="OnLuckyBoostPressed"]
 [connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CloseButton" to="." method="OnCloseShop"]

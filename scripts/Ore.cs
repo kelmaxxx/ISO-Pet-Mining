@@ -83,8 +83,9 @@ public partial class Ore : Node2D
 		IsDead = true;
 
 		var gm = GameManager.Instance;
-		int bonus = gm.CoinBoost ? 2 : 1;
-		int amount = (int)(OreData["amount"].AsSingle() * (1f + gm.PickaxeLevel * 0.4f) * bonus);
+		// Reward scales with the prestige multiplier. The coin-boost doubling is
+		// applied inside AddCoins, so we don't double-count it here.
+		int amount = (int)(OreData["amount"].AsSingle() * gm.PrestigeMultiplier);
 
 		if (OreData["reward"].AsString() == "gems")
 			gm.AddGems(amount);

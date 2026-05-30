@@ -25,9 +25,11 @@ GameManager="*res://scripts/GameManager.cs"
 
 [display]
 
-window/size/viewport_width=480
-window/size/viewport_height=854
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/resizable=true
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [dotnet]
 
