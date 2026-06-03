@@ -29,6 +29,9 @@ public partial class Ore : Node2D
 
 		_clickArea.InputPickable = true;
 		_clickArea.InputEvent += OnClick;
+
+		// Soft shadow under the ore to ground it on the tile.
+		Lighting.AttachDropShadow(this, 4f, 34f);
 	}
 
 	public void Setup(string typeName, Dictionary data)
@@ -40,7 +43,7 @@ public partial class Ore : Node2D
 
 		string texturePath = data["texture"].AsString();
 		if (ResourceLoader.Exists(texturePath))
-			_oreSprite.Texture = GD.Load<Texture2D>(texturePath);
+			_oreSprite.Texture = Lighting.GetLitTexture(GD.Load<Texture2D>(texturePath));
 
 		if (_hpBar != null)
 		{

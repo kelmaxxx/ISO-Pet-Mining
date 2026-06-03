@@ -24,6 +24,9 @@ public partial class Building : Node2D
 
 		_clickArea.InputPickable = true;
 		_clickArea.InputEvent += OnClick;
+
+		// Soft shadow under the building footprint.
+		Lighting.AttachDropShadow(this, 0f, 46f);
 	}
 
 	// Called by World right after the building is added to the scene.
@@ -36,7 +39,7 @@ public partial class Building : Node2D
 
 		if (texturePath != "" && ResourceLoader.Exists(texturePath))
 		{
-			_sprite.Texture = GD.Load<Texture2D>(texturePath);
+			_sprite.Texture = Lighting.GetLitTexture(GD.Load<Texture2D>(texturePath));
 			_sprite.Visible = true;
 			_placeholder.Visible = false;
 		}

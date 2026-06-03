@@ -1,12 +1,12 @@
-[gd_scene load_steps=3 format=3 uid="uid://dcc0bp1gjma4t"]
+[gd_scene format=3 uid="uid://dcc0bp1gjma4t"]
 
-[ext_resource type="Script" path="res://scripts/World.cs" id="1_world_script"]
+[ext_resource type="Script" uid="uid://d3esb2i8c21b4" path="res://scripts/World.cs" id="1_world_script"]
 [ext_resource type="PackedScene" uid="uid://dcc0bp1gjlt7l" path="res://scenes/HUD.tscn" id="2_hud_scene"]
 
-[node name="World" type="Node2D"]
+[node name="World" type="Node2D" unique_id=668549661]
 script = ExtResource("1_world_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1363357822]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -14,11 +14,11 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.0784, 0.105, 0.149, 1)
 
-[node name="TileLayer" type="Node2D" parent="."]
+[node name="TileLayer" type="Node2D" parent="." unique_id=1711674029]
 
-[node name="ObjectLayer" type="Node2D" parent="."]
+[node name="ObjectLayer" type="Node2D" parent="." unique_id=507786139]
 y_sort_enabled = true
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=928849168]
 
-[node name="HUD" parent="UI" instance=ExtResource("2_hud_scene")]
+[node name="HUD" parent="UI" unique_id=1973809854 instance=ExtResource("2_hud_scene")]

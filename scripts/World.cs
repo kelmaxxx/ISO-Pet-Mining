@@ -74,6 +74,7 @@ public partial class World : Node2D
 	public override void _Ready()
 	{
 		GD.Randomize();
+		Lighting.BuildWorldLighting(this);
 		BuildAvailableOreTypes();
 		BuildTerrain();
 		SpawnBuildings();
@@ -142,7 +143,7 @@ public partial class World : Node2D
 
 				var sprite = new Sprite2D
 				{
-					Texture = tex,
+					Texture = Lighting.GetLitTexture(tex),
 					Position = GridToScreen(col, row),
 					ZIndex = col + row,
 				};
@@ -261,6 +262,9 @@ public partial class World : Node2D
 		{
 			node2d.Position = GridToScreen(Cols / 2, Rows / 2);
 			node2d.ZIndex = 999;
+			// Character art is a tall, centered sprite, so its feet sit well below
+			// the node origin. Drop the shadow down near the feet (tune if needed).
+			Lighting.AttachDropShadow(node2d, 96f, 60f);
 		}
 		objectLayer.AddChild(_characterNode);
 	}

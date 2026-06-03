@@ -13,6 +13,7 @@ public partial class Pet : CharacterBody2D
 	public override void _Ready()
 	{
 		_sprite = GetNode<AnimatedSprite2D>("Sprite");
+		Lighting.AttachDropShadow(this, 8f, 24f);
 	}
 
 	public void Setup(Dictionary data)
