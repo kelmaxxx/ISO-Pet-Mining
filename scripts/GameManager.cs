@@ -1,6 +1,7 @@
 using Godot;
 using Godot.Collections;
 using System.Collections.Generic;
+using System.Text.Json;
 
 public partial class GameManager : Node
 {
@@ -38,9 +39,92 @@ public partial class GameManager : Node
 		Instance = this;
 	}
 
+	// ── Save / Load ──────────────────────────────────────────────────────────
+	private const string SavePath = "user://save.json";
+
+	public void SaveGame()
+	{
+		// Serialize pets as a plain list of string-keyed dicts so JSON can handle them.
+		var petsData = new List<System.Collections.Generic.Dictionary<string, object>>();
+		foreach (var pet in EquippedPets)
+		{
+			var p = new System.Collections.Generic.Dictionary<string, object>();
+			foreach (var kv in pet)
+				p[kv.Key.AsString()] = kv.Value.Obj;
+			petsData.Add(p);
+		}
+
+		var data = new System.Collections.Generic.Dictionary<string, object>
+		{
+			["coins"]          = Coins,
+			["gems"]           = Gems,
+			["prestige_level"] = PrestigeLevel,
+			["prestige_cost"]  = PrestigeCost,
+			["pets"]           = petsData,
+		};
+
+		string json = JsonSerializer.Serialize(data);
+		using var file = FileAccess.Open(SavePath, FileAccess.ModeFlags.Write);
+		file.StoreString(json);
+	}
+
+	public void LoadGame()
+	{
+		if (!FileAccess.FileExists(SavePath)) return;
+		using var file = FileAccess.Open(SavePath, FileAccess.ModeFlags.Read);
+		string json = file.GetAsText();
+		var data = JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, JsonElement>>(json);
+		if (data == null) return;
+
+		if (data.TryGetValue("coins", out var c))          Coins          = c.GetInt32();
+		if (data.TryGetValue("gems",  out var g))          Gems           = g.GetInt32();
+		if (data.TryGetValue("prestige_level", out var pl)) PrestigeLevel = pl.GetInt32();
+		if (data.TryGetValue("prestige_cost",  out var pc)) PrestigeCost  = pc.GetInt32();
+
+		if (data.TryGetValue("pets", out var petsEl) && petsEl.ValueKind == JsonValueKind.Array)
+		{
+			EquippedPets.Clear();
+			foreach (var petEl in petsEl.EnumerateArray())
+			{
+				var pet = new Dictionary();
+				foreach (var prop in petEl.EnumerateObject())
+				{
+					switch (prop.Value.ValueKind)
+					{
+						case JsonValueKind.Number: pet[prop.Name] = prop.Value.GetSingle(); break;
+						default:                   pet[prop.Name] = prop.Value.GetString(); break;
+					}
+				}
+				EquippedPets.Add(pet);
+			}
+		}
+
+		EmitSignal(SignalName.CoinsChanged, Coins);
+		EmitSignal(SignalName.GemsChanged, Gems);
+		EmitSignal(SignalName.PrestigeChanged, PrestigeLevel, PrestigeMultiplier, PrestigeCost);
+		GD.Print($"[GameManager] Save loaded — coins:{Coins} gems:{Gems} prestige:{PrestigeLevel} pets:{EquippedPets.Count}");
+	}
+
+	// ── Idle Income ───────────────────────────────────────────────────────────
+	// Pets passively earn coins over time even when the player is not clicking.
+	private double _idleAccum = 0.0;
+
+	public override void _Process(double delta)
+	{
+		_idleAccum += delta;
+		if (_idleAccum >= 1.0)   // tick every second to avoid spamming signals
+		{
+			_idleAccum -= 1.0;
+			float earned = GetPetDps();
+			if (earned > 0f)
+				AddCoins((int)earned);   // AddCoins already fires CoinsChanged + autosave
+		}
+	}
+
 	public override void _Ready()
 	{
 		GD.Randomize();
+		LoadGame();
 	}
 
 	private double Now() => Time.GetTicksMsec() / 1000.0;
@@ -50,12 +134,14 @@ public partial class GameManager : Node
 		int mult = (CoinBoost && Now() < CoinBoostEnd) ? 2 : 1;
 		Coins += amount * mult;
 		EmitSignal(SignalName.CoinsChanged, Coins);
+		SaveGame();
 	}
 
 	public void AddGems(int amount)
 	{
 		Gems += amount;
 		EmitSignal(SignalName.GemsChanged, Gems);
+		SaveGame();
 	}
 
 	public bool SpendCoins(int amount)
@@ -64,6 +150,7 @@ public partial class GameManager : Node
 		{
 			Coins -= amount;
 			EmitSignal(SignalName.CoinsChanged, Coins);
+			SaveGame();
 			return true;
 		}
 		return false;
@@ -75,6 +162,7 @@ public partial class GameManager : Node
 		{
 			Gems -= amount;
 			EmitSignal(SignalName.GemsChanged, Gems);
+			SaveGame();
 			return true;
 		}
 		return false;
@@ -89,6 +177,7 @@ public partial class GameManager : Node
 		PrestigeCost = (int)(PrestigeCost * 3);
 		EmitSignal(SignalName.CoinsChanged, Coins);
 		EmitSignal(SignalName.PrestigeChanged, PrestigeLevel, PrestigeMultiplier, PrestigeCost);
+		SaveGame();
 		return true;
 	}
 
@@ -179,6 +268,7 @@ public partial class GameManager : Node
 				if (EquippedPets.Count > MaxPets)
 					EquippedPets.RemoveAt(0);
 				EmitSignal(SignalName.PetAdded, pet);
+				SaveGame();
 				return pet;
 			}
 		}
