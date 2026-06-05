@@ -22,7 +22,9 @@ public partial class GameManager : Node
 	private const float PetDpsFactor = 0.5f;
 
 	public Array<Dictionary> EquippedPets { get; private set; } = new();
-	public int MaxPets { get; private set; } = 5;
+	public int SpeedLevel { get; private set; } = 0;
+	public int MaxPetsLevel { get; private set; } = 0;
+	public int MaxPets => 5 + MaxPetsLevel;
 
 	public bool CoinBoost { get; private set; } = false;
 	public double CoinBoostEnd { get; private set; } = 0.0;
@@ -33,6 +35,8 @@ public partial class GameManager : Node
 	[Signal] public delegate void GemsChangedEventHandler(int amount);
 	[Signal] public delegate void PetAddedEventHandler(Dictionary petData);
 	[Signal] public delegate void PrestigeChangedEventHandler(int level, float multiplier, int nextCost);
+	[Signal] public delegate void SpeedLevelChangedEventHandler(int level, int nextCost);
+	[Signal] public delegate void MaxPetsLevelChangedEventHandler(int level, int nextCost);
 
 	public override void _EnterTree()
 	{
@@ -61,6 +65,8 @@ public partial class GameManager : Node
 			["prestige_level"] = PrestigeLevel,
 			["prestige_cost"]  = PrestigeCost,
 			["pets"]           = petsData,
+			["speed_level"]    = SpeedLevel,
+			["max_pets_level"] = MaxPetsLevel,
 		};
 
 		string json = JsonSerializer.Serialize(data);
@@ -80,6 +86,8 @@ public partial class GameManager : Node
 		if (data.TryGetValue("gems",  out var g))          Gems           = g.GetInt32();
 		if (data.TryGetValue("prestige_level", out var pl)) PrestigeLevel = pl.GetInt32();
 		if (data.TryGetValue("prestige_cost",  out var pc)) PrestigeCost  = pc.GetInt32();
+		if (data.TryGetValue("speed_level",    out var sl)) SpeedLevel    = sl.GetInt32();
+		if (data.TryGetValue("max_pets_level", out var mpl)) MaxPetsLevel = mpl.GetInt32();
 
 		if (data.TryGetValue("pets", out var petsEl) && petsEl.ValueKind == JsonValueKind.Array)
 		{
@@ -102,6 +110,8 @@ public partial class GameManager : Node
 		EmitSignal(SignalName.CoinsChanged, Coins);
 		EmitSignal(SignalName.GemsChanged, Gems);
 		EmitSignal(SignalName.PrestigeChanged, PrestigeLevel, PrestigeMultiplier, PrestigeCost);
+		EmitSignal(SignalName.SpeedLevelChanged, SpeedLevel, GetSpeedUpgradeCost());
+		EmitSignal(SignalName.MaxPetsLevelChanged, MaxPetsLevel, GetMaxPetsUpgradeCost());
 		GD.Print($"[GameManager] Save loaded — coins:{Coins} gems:{Gems} prestige:{PrestigeLevel} pets:{EquippedPets.Count}");
 	}
 
@@ -273,5 +283,50 @@ public partial class GameManager : Node
 			}
 		}
 		return pool[0];
+	}
+
+	public const int MaxSpeedLevel = 10;
+	public const int MaxPetsLevelCap = 5;
+
+	public float GetPlayerSpeed() => 80f + SpeedLevel * 15f;
+
+	public int GetSpeedUpgradeCost()
+	{
+		if (SpeedLevel >= MaxSpeedLevel) return -1;
+		return 100 * (int)Mathf.Pow(2, SpeedLevel);
+	}
+
+	public int GetMaxPetsUpgradeCost()
+	{
+		if (MaxPetsLevel >= MaxPetsLevelCap) return -1;
+		return 15 + MaxPetsLevel * 15;
+	}
+
+	public bool BuySpeedUpgrade()
+	{
+		if (SpeedLevel >= MaxSpeedLevel) return false;
+		int cost = GetSpeedUpgradeCost();
+		if (SpendCoins(cost))
+		{
+			SpeedLevel++;
+			EmitSignal(SignalName.SpeedLevelChanged, SpeedLevel, GetSpeedUpgradeCost());
+			SaveGame();
+			return true;
+		}
+		return false;
+	}
+
+	public bool BuyMaxPetsUpgrade()
+	{
+		if (MaxPetsLevel >= MaxPetsLevelCap) return false;
+		int cost = GetMaxPetsUpgradeCost();
+		if (SpendGems(cost))
+		{
+			MaxPetsLevel++;
+			EmitSignal(SignalName.MaxPetsLevelChanged, MaxPetsLevel, GetMaxPetsUpgradeCost());
+			SaveGame();
+			return true;
+		}
+		return false;
 	}
 }

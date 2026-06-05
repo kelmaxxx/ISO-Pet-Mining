@@ -4,7 +4,7 @@ public partial class Character : CharacterBody2D
 {
 	public Ore TargetOre { get; set; }
 	private float _attackTimer = 0f;
-	private float _moveSpeed = 80f;
+	private float _moveSpeed => GameManager.Instance.GetPlayerSpeed();
 
 	private AnimatedSprite2D _sprite;
 

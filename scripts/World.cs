@@ -38,6 +38,7 @@ public partial class World : Node2D
 		["gold"] = new OreInfo { Hp = 130, Reward = "coins", Amount = 80, Chance = 0.10f, Texture = "res://assets/ores/ore_gold.png" },
 		["crystal"] = new OreInfo { Hp = 100, Reward = "gems", Amount = 3, Chance = 0.07f, Texture = "res://assets/ores/ore_crystal.png" },
 		["ruby"] = new OreInfo { Hp = 200, Reward = "gems", Amount = 10, Chance = 0.04f, Texture = "res://assets/ores/ore_ruby.png" },
+		["meteor"] = new OreInfo { Hp = 350, Reward = "gems", Amount = 15, Chance = 0.0f, Texture = "res://assets/ores/ore_gold.png" },
 	};
 
 	private readonly System.Collections.Generic.Dictionary<string, Texture2D> _terrainCache = new();
@@ -52,6 +53,9 @@ public partial class World : Node2D
 	// ores never respawn on top of something.
 	private readonly HashSet<Vector2I> _occupiedCells = new();
 	private static readonly Vector2I CharacterCell = new(Cols / 2, Rows / 2);
+
+	private double _meteorTimer = 0.0;
+	private double _nextMeteorTime = 0.0;
 
 	private struct BuildingDef
 	{
@@ -80,6 +84,7 @@ public partial class World : Node2D
 		SpawnBuildings();
 		SpawnOres();
 		SpawnCharacter();
+		ResetMeteorTimer();
 		GD.Print("Game Started");
 	}
 
@@ -323,6 +328,13 @@ public partial class World : Node2D
 			if (child is Node2D n2d)
 				n2d.ZIndex = (int)n2d.Position.Y;
 		}
+
+		_meteorTimer += delta;
+		if (_meteorTimer >= _nextMeteorTime)
+		{
+			ResetMeteorTimer();
+			TriggerMeteorCrash();
+		}
 	}
 
 	public void SpawnPet(Dictionary petData)
@@ -336,5 +348,85 @@ public partial class World : Node2D
 		GetNode<Node2D>("ObjectLayer").AddChild(pet);
 		pet.AddToGroup("pets");
 		pet.Setup(petData);
+	}
+
+	private void ResetMeteorTimer()
+	{
+		_meteorTimer = 0.0;
+		_nextMeteorTime = GD.RandRange(45.0, 90.0); // Crash every 45-90 seconds
+	}
+
+	private void TriggerMeteorCrash()
+	{
+		var freeCells = new List<Vector2I>();
+		for (int row = 0; row < Rows; row++)
+		{
+			for (int col = 0; col < Cols; col++)
+			{
+				var cell = new Vector2I(col, row);
+				if (!_occupiedCells.Contains(cell))
+					freeCells.Add(cell);
+			}
+		}
+
+		if (freeCells.Count == 0) return;
+		Vector2I chosen = freeCells[(int)(GD.Randi() % (uint)freeCells.Count)];
+		_occupiedCells.Add(chosen);
+
+		var objectLayer = GetNode<Node2D>("ObjectLayer");
+		var ore = OreScene.Instantiate<Ore>();
+		var pos = GridToScreen(chosen.X, chosen.Y);
+		ore.Position = new Vector2(pos.X, pos.Y - 16);
+		ore.ZIndex = chosen.X + chosen.Y + 1;
+		objectLayer.AddChild(ore);
+
+		var info = OreDataTable["meteor"];
+		var data = new Dictionary
+		{
+			["hp"] = info.Hp,
+			["reward"] = info.Reward,
+			["amount"] = info.Amount,
+			["chance"] = info.Chance,
+			["texture"] = info.Texture,
+		};
+		ore.Setup("meteor", data);
+		ore.Cell = chosen;
+		ore.World = this;
+		ore.AddToGroup("ores");
+		ore.OreClicked += OnOreClicked;
+		_oreNodes.Add(ore);
+
+		// Visually modify: bigger scale, glowing gold tint
+		var sprite = ore.GetNode<Sprite2D>("OreSprite");
+		if (sprite != null)
+			sprite.SelfModulate = new Color(1.5f, 1.3f, 0.4f, 1f);
+		ore.Scale = new Vector2(1.5f, 1.5f);
+
+		ScreenShake();
+		ShowAnnouncement("A Golden Meteor has crashed!");
+	}
+
+	private void ScreenShake()
+	{
+		Vector2 originalPos = Position;
+		var tween = CreateTween();
+		for (int i = 0; i < 4; i++)
+		{
+			Vector2 offset = new Vector2((float)GD.RandRange(-6, 6), (float)GD.RandRange(-6, 6));
+			tween.TweenProperty(this, "position", originalPos + offset, 0.05);
+		}
+		tween.TweenProperty(this, "position", originalPos, 0.05);
+	}
+
+	private void ShowAnnouncement(string message)
+	{
+		var hud = GetNodeOrNull<HUD>("UI/HUD");
+		hud?.ShowAnnouncement(message);
+	}
+
+	public void RemoveMeteor(Ore ore)
+	{
+		_occupiedCells.Remove(ore.Cell);
+		_oreNodes.Remove(ore);
 	}
 }

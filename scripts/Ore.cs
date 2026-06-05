@@ -96,6 +96,15 @@ public partial class Ore : Node2D
 			gm.AddCoins(amount);
 
 		Visible = false;
+
+		if (OreType == "meteor")
+		{
+			if (World != null)
+				World.RemoveMeteor(this);
+			QueueFree();
+			return;
+		}
+
 		await ToSignal(GetTree().CreateTimer(GD.RandRange(3.0, 6.0)), SceneTreeTimer.SignalName.Timeout);
 
 		// Respawn at a random free spot instead of the same place.
