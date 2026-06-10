@@ -104,7 +104,11 @@ public partial class HUD : Control
 
 	public void OnPrestigePressed()
 	{
-		GameManager.Instance.Prestige();
+		if (GameManager.Instance.Prestige())
+		{
+			var world = GetTree().CurrentScene as World;
+			world?.SpawnPrestigeBurst();
+		}
 	}
 
 	public void OnCoinBoostPressed()

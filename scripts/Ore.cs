@@ -89,11 +89,17 @@ public partial class Ore : Node2D
 		// Reward scales with the prestige multiplier. The coin-boost doubling is
 		// applied inside AddCoins, so we don't double-count it here.
 		int amount = (int)(OreData["amount"].AsSingle() * gm.PrestigeMultiplier);
+		string reward = OreData["reward"].AsString();
 
-		if (OreData["reward"].AsString() == "gems")
+		if (reward == "gems")
 			gm.AddGems(amount);
 		else
 			gm.AddCoins(amount);
+
+		if (OreType == "meteor")
+			Effects.SpawnBurst(GetParent(), GlobalPosition, new Color(1f, 0.65f, 0.15f), amount: 40, scale: 2f, lifetime: 1.0f);
+		else
+			Effects.SpawnBurst(GetParent(), GlobalPosition, reward == "gems" ? new Color(0.55f, 0.85f, 1f) : new Color(0.85f, 0.7f, 0.35f));
 
 		Visible = false;
 

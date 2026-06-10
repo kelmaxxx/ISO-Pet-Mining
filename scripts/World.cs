@@ -429,4 +429,13 @@ public partial class World : Node2D
 		_occupiedCells.Remove(ore.Cell);
 		_oreNodes.Remove(ore);
 	}
+
+	// A big golden burst at the character's position, played when the player
+	// successfully prestiges.
+	public void SpawnPrestigeBurst()
+	{
+		var objectLayer = GetNode<Node2D>("ObjectLayer");
+		Vector2 pos = (_characterNode as Node2D)?.GlobalPosition ?? GridToScreen(Cols / 2, Rows / 2);
+		Effects.SpawnBurst(objectLayer, pos, new Color(1f, 0.85f, 0.2f), amount: 40, scale: 2f, lifetime: 1.0f);
+	}
 }
