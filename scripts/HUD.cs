@@ -160,7 +160,7 @@ public partial class HUD : Control
 		label.AddThemeColorOverride("font_color", new Color(1.0f, 0.85f, 0.0f)); // Gold color
 		
 		// Position at the top center
-		label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopWide, Control.LayoutPresetMode.Min, 20);
+		label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopWide, Control.LayoutPresetMode.Minsize, 20);
 		label.OffsetTop = 50;
 		AddChild(label);
 

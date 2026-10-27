@@ -27,7 +27,7 @@ public static class Effects
             ColorRamp = new GradientTexture1D { Gradient = fade },
         };
 
-        var particles = new GPUParticles2D
+        var particles = new GpuParticles2D
         {
             Texture = GetParticleTexture(),
             Amount = amount,
