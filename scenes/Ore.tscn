@@ -9,20 +9,20 @@ size = Vector2(40, 40)
 script = ExtResource("1_ore_script")
 
 [node name="OreSprite" type="Sprite2D" parent="."]
-position = Vector2(0, -8)
+position = Vector2(0, -16)
 
 [node name="ClickArea" type="Area2D" parent="."]
 input_pickable = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea"]
-position = Vector2(0, -8)
+position = Vector2(0, -16)
 shape = SubResource("RectangleShape2D_ore")
 
 [node name="HPBar" type="ProgressBar" parent="."]
 offset_left = -20.0
-offset_top = -34.0
+offset_top = -46.0
 offset_right = 20.0
-offset_bottom = -26.0
+offset_bottom = -38.0
 max_value = 100.0
 value = 100.0
 show_percentage = false
