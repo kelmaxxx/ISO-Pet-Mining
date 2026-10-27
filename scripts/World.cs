@@ -10,6 +10,12 @@ public partial class World : Node2D
 	private const int TileH = 32;
 	private const int GridOriginY = 180;
 
+	// Terrain art draws its top face 63x28 px inside a 64x64 canvas, so it has
+	// to be stretched onto the 64x32 cell or tiles never meet at the edges.
+	// shortcut: hardcoded to the current grass art; drop it if new terrain art
+	// is drawn at 64x32.
+	private static readonly Vector2 TerrainArtScale = new(64f / 63f, 32f / 28f);
+
 	private static readonly PackedScene OreScene = GD.Load<PackedScene>("res://scenes/Ore.tscn");
 	private static readonly PackedScene CharacterScene = GD.Load<PackedScene>("res://scenes/Character.tscn");
 	private static readonly PackedScene PetScene = GD.Load<PackedScene>("res://scenes/Pet.tscn");
@@ -132,7 +138,7 @@ public partial class World : Node2D
 		return LoadTerrain("grass");
 	}
 
-	private void BuildTerrain()
+private void BuildTerrain()
 	{
 		var tileLayer = GetNode<Node2D>("TileLayer");
 		string[] tileTypes = { "grass", "dirt", "stone" };
@@ -151,6 +157,7 @@ public partial class World : Node2D
 					Texture = Lighting.GetLitTexture(tex),
 					Position = GridToScreen(col, row),
 					ZIndex = col + row,
+					Scale = TerrainArtScale,
 				};
 				tileLayer.AddChild(sprite);
 			}
