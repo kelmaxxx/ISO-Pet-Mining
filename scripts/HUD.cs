@@ -165,6 +165,7 @@ public partial class HUD : Control
 		}
 		var pet = gm.RollEgg(eggType);
 		if (pet.Count == 0) return;
+		AudioManager.Instance.PlayHatch();
 		var world = GetTree().CurrentScene as World;
 		world?.SpawnPet(pet);
 		_hatchPopup.Visible = false;

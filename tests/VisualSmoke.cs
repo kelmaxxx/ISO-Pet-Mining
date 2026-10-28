@@ -23,6 +23,13 @@ public partial class VisualSmoke : Node
 
 		var objectLayer = world.GetNode<Node2D>("ObjectLayer");
 
+		var camera = world.GetNodeOrNull<Camera2D>("Camera");
+		Check(camera != null && camera.Enabled && camera.IsCurrent(), "world camera is active");
+		Check(AudioManager.Instance != null, "audio manager autoload exists");
+		AudioManager.Instance?.PlayHit();
+		AudioManager.Instance?.PlayCoin();
+		AudioManager.Instance?.PlayHatch();
+
 		int savedPets = GameManager.Instance.EquippedPets.Count;
 		int spawnedPets = GetTree().GetNodesInGroup("pets").Count;
 		Check(savedPets == 0 || spawnedPets >= savedPets,
@@ -63,6 +70,8 @@ public partial class VisualSmoke : Node
 
 		var distinctTiles = new HashSet<ulong>();
 		var tileLayer = world.GetNode<Node2D>("TileLayer");
+		Check(tileLayer.GetChildCount() == 32 * 32,
+			$"map expanded to 32x32 ({tileLayer.GetChildCount()} tiles)");
 		foreach (var tile in tileLayer.GetChildren())
 		{
 			if (tile is not Sprite2D { Texture: not null } s) continue;

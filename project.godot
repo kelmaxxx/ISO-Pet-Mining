@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameManager="*res://scripts/GameManager.cs"
+AudioManager="*res://scripts/AudioManager.cs"
 
 [display]
 
