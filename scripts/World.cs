@@ -94,6 +94,8 @@ public partial class World : Node2D
 		// Loaded pets only exist in the save; spawn their nodes on startup too.
 		foreach (var petData in GameManager.Instance.EquippedPets)
 			SpawnPet(petData);
+		if (GameManager.Instance.OfflineEarnings > 0)
+			ShowAnnouncement($"Welcome back! +{GameManager.Instance.OfflineEarnings} coins from your pets");
 		ResetMeteorTimer();
 		GD.Print("Game Started");
 	}
