@@ -28,6 +28,14 @@ public partial class VisualSmoke : Node
 		Check(savedPets == 0 || spawnedPets >= savedPets,
 			$"saved pets spawned ({spawnedPets}/{savedPets})");
 
+		Check(GameManager.CalculateOfflineCoins(10f, 3600) == 36000,
+			"offline income pays pet dps for the time away");
+		Check(GameManager.CalculateOfflineCoins(10f, GameManager.MaxOfflineSeconds + 5000)
+			== GameManager.CalculateOfflineCoins(10f, GameManager.MaxOfflineSeconds),
+			"offline income is capped");
+		Check(GameManager.CalculateOfflineCoins(10f, -60) == 0,
+			"clock going backwards earns nothing");
+
 		var character = objectLayer.GetNodeOrNull<Character>("Character");
 		Check(character != null, "character node spawned");
 		if (character != null)

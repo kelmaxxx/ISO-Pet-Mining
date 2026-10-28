@@ -1,5 +1,6 @@
 using Godot;
 using Godot.Collections;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
@@ -45,6 +46,16 @@ public partial class GameManager : Node
 
 	// ── Save / Load ──────────────────────────────────────────────────────────
 	private const string SavePath = "user://save.json";
+	public const long MaxOfflineSeconds = 10 * 60 * 60; // 10h cap on idle payout
+	public int OfflineEarnings { get; private set; } = 0;
+
+	// Pets earn their normal idle rate while the game is closed, capped so a
+	// long absence can't hand out an unbounded pile of coins.
+	public static int CalculateOfflineCoins(float petDps, long secondsAway)
+	{
+		secondsAway = Math.Clamp(secondsAway, 0, MaxOfflineSeconds);
+		return (int)(petDps * secondsAway);
+	}
 
 	public void SaveGame()
 	{
@@ -67,6 +78,7 @@ public partial class GameManager : Node
 			["pets"]           = petsData,
 			["speed_level"]    = SpeedLevel,
 			["max_pets_level"] = MaxPetsLevel,
+			["last_saved_timestamp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
 		};
 
 		string json = JsonSerializer.Serialize(data);
@@ -107,11 +119,23 @@ public partial class GameManager : Node
 			}
 		}
 
+		// Old saves have no timestamp: the first run of this feature earns nothing.
+		OfflineEarnings = 0;
+		if (data.TryGetValue("last_saved_timestamp", out var tsEl))
+		{
+			long secondsAway = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - tsEl.GetInt64();
+			OfflineEarnings = CalculateOfflineCoins(GetPetDps(), secondsAway);
+			Coins += OfflineEarnings;
+		}
+
 		EmitSignal(SignalName.CoinsChanged, Coins);
 		EmitSignal(SignalName.GemsChanged, Gems);
 		EmitSignal(SignalName.PrestigeChanged, PrestigeLevel, PrestigeMultiplier, PrestigeCost);
 		EmitSignal(SignalName.SpeedLevelChanged, SpeedLevel, GetSpeedUpgradeCost());
 		EmitSignal(SignalName.MaxPetsLevelChanged, MaxPetsLevel, GetMaxPetsUpgradeCost());
+		// Stamp the save now that the offline payout is banked, so a reload can't claim it again.
+		if (OfflineEarnings > 0)
+			SaveGame();
 		GD.Print($"[GameManager] Save loaded — coins:{Coins} gems:{Gems} prestige:{PrestigeLevel} pets:{EquippedPets.Count}");
 	}
 
