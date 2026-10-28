@@ -44,6 +44,8 @@ public partial class Ore : Node2D
 		string texturePath = data["texture"].AsString();
 		if (ResourceLoader.Exists(texturePath))
 			_oreSprite.Texture = Lighting.GetLitTexture(GD.Load<Texture2D>(texturePath));
+		else if (typeName == "meteor")
+			_oreSprite.Texture = Lighting.GetLitTexture(PlaceholderArt.MeteorTexture());
 
 		if (_hpBar != null)
 		{

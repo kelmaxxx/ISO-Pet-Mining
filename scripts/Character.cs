@@ -20,7 +20,19 @@ public partial class Character : CharacterBody2D
 	public override void _Ready()
 	{
 		_sprite = GetNode<AnimatedSprite2D>("Sprite");
+		// Keep real art if the scene has it; otherwise draw a stand-in.
+		if (_sprite.SpriteFrames == null || !_sprite.SpriteFrames.HasAnimation("idle"))
+		{
+			_sprite.SpriteFrames = PlaceholderArt.CharacterFrames();
+			_sprite.Scale = new Vector2(1.4f, 1.4f); // placeholder art is drawn small
+		}
+
 		PlayDirectional("idle");
+
+		var frame = _sprite.SpriteFrames.GetFrameTexture("idle", 0);
+		float height = frame?.GetHeight() ?? 64;
+		float scale = _sprite.Scale.Y;
+		Lighting.AttachDropShadow(this, (height * 0.5f - 4f) * scale, height * 0.55f * scale);
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -42,6 +54,7 @@ public partial class Character : CharacterBody2D
 			Velocity = dir * _moveSpeed;
 			MoveAndSlide();
 			_lastDir = DirFromVector(dir);
+			_sprite.FlipH = dir.X < 0;
 			PlayDirectional("walk");
 		}
 		else

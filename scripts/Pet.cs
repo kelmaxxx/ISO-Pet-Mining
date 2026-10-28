@@ -13,12 +13,26 @@ public partial class Pet : CharacterBody2D
 	public override void _Ready()
 	{
 		_sprite = GetNode<AnimatedSprite2D>("Sprite");
-		Lighting.AttachDropShadow(this, 8f, 24f);
 	}
 
 	public void Setup(Dictionary data)
 	{
 		PetData = data;
+
+		// Pets have no art files yet, so draw a stand-in from their icon + rarity.
+		if (_sprite.SpriteFrames == null || !_sprite.SpriteFrames.HasAnimation("walk"))
+		{
+			_sprite.SpriteFrames = PlaceholderArt.PetFrames(
+				data.TryGetValue("icon", out var icon) ? icon.AsString() : "",
+				data.TryGetValue("rarity", out var rarity) ? rarity.AsString() : "common");
+			_sprite.Scale = new Vector2(1.25f, 1.25f); // placeholder art is drawn small
+		}
+		SafePlay("walk");
+
+		var frame = _sprite.SpriteFrames.GetFrameTexture("walk", 0);
+		float height = frame?.GetHeight() ?? 64;
+		float scale = _sprite.Scale.Y;
+		Lighting.AttachDropShadow(this, (height * 0.5f - 12f) * scale, height * 0.42f * scale);
 	}
 
 	public override void _PhysicsProcess(double delta)

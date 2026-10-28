@@ -44,7 +44,7 @@ public partial class World : Node2D
 		["gold"] = new OreInfo { Hp = 130, Reward = "coins", Amount = 80, Chance = 0.10f, Texture = "res://assets/ores/ore_gold.png" },
 		["crystal"] = new OreInfo { Hp = 100, Reward = "gems", Amount = 3, Chance = 0.07f, Texture = "res://assets/ores/ore_crystal.png" },
 		["ruby"] = new OreInfo { Hp = 200, Reward = "gems", Amount = 10, Chance = 0.04f, Texture = "res://assets/ores/ore_ruby.png" },
-		["meteor"] = new OreInfo { Hp = 350, Reward = "gems", Amount = 15, Chance = 0.0f, Texture = "res://assets/ores/ore_gold.png" },
+		["meteor"] = new OreInfo { Hp = 350, Reward = "gems", Amount = 15, Chance = 0.0f, Texture = "res://assets/ores/ore_meteor.png" },
 	};
 
 	private readonly System.Collections.Generic.Dictionary<string, Texture2D> _terrainCache = new();
@@ -135,7 +135,14 @@ public partial class World : Node2D
 	{
 		var tex = LoadTerrain(preferred);
 		if (tex != null) return tex;
-		return LoadTerrain("grass");
+
+		var grass = LoadTerrain("grass");
+		if (grass == null || preferred == "grass") return grass;
+
+		// Missing dirt/stone art: recolor the grass tile so the map still varies.
+		var variant = PlaceholderArt.TerrainVariant(grass, preferred);
+		_terrainCache[preferred] = variant;
+		return variant;
 	}
 
 private void BuildTerrain()
@@ -265,18 +272,13 @@ private void BuildTerrain()
 
 	private void SpawnCharacter()
 	{
-		if (!ResourceLoader.Exists("res://assets/character/character_idle.png"))
-			return;
+		if (CharacterScene == null) return;
 		var objectLayer = GetNode<Node2D>("ObjectLayer");
 		_characterNode = CharacterScene.Instantiate<Node>();
-		var node2d = _characterNode as Node2D;
-		if (node2d != null)
+		if (_characterNode is Node2D node2d)
 		{
 			node2d.Position = GridToScreen(Cols / 2, Rows / 2);
 			node2d.ZIndex = 999;
-			// Character art is a tall, centered sprite, so its feet sit well below
-			// the node origin. Drop the shadow down near the feet (tune if needed).
-			Lighting.AttachDropShadow(node2d, 96f, 60f);
 		}
 		objectLayer.AddChild(_characterNode);
 	}
@@ -403,10 +405,6 @@ private void BuildTerrain()
 		ore.OreClicked += OnOreClicked;
 		_oreNodes.Add(ore);
 
-		// Visually modify: bigger scale, glowing gold tint
-		var sprite = ore.GetNode<Sprite2D>("OreSprite");
-		if (sprite != null)
-			sprite.SelfModulate = new Color(1.5f, 1.3f, 0.4f, 1f);
 		ore.Scale = new Vector2(1.5f, 1.5f);
 
 		ScreenShake();
