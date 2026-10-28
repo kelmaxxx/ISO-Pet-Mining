@@ -10,11 +10,9 @@ public partial class World : Node2D
 	private const int TileH = 16;
 	private const int GridOriginY = 70;
 
-	// Terrain art draws its top face 63x28 px inside a 64x64 canvas, so it has
-	// to be stretched onto the TileW x TileH cell or tiles never meet at the edges.
-	// shortcut: hardcoded to the current grass art; drop it when terrain art is
-	// exported at exactly 32x32 with a 32x16 top face.
-	private static readonly Vector2 TerrainArtScale = new(TileW / 63f, TileH / 28f);
+	// Current terrain art is a 32x32 block whose 32x16 top face starts at the
+	// image's top-left, so it only needs anchoring, not scaling.
+	private static readonly Vector2 TerrainTopFaceOffset = new(-TileW / 2f, -TileH / 2f);
 
 	private static readonly PackedScene OreScene = GD.Load<PackedScene>("res://scenes/Ore.tscn");
 	private static readonly PackedScene CharacterScene = GD.Load<PackedScene>("res://scenes/Character.tscn");
@@ -185,8 +183,9 @@ private void BuildTerrain()
 				{
 					Texture = Lighting.GetLitTexture(tex),
 					Position = GridToScreen(col, row),
+					Offset = TerrainTopFaceOffset,
+					Centered = false,
 					ZIndex = col + row,
-					Scale = TerrainArtScale,
 				};
 				tileLayer.AddChild(sprite);
 			}
@@ -203,7 +202,7 @@ private void BuildTerrain()
 				var cell = new Vector2I(col, row);
 				if (!InMap(col, row)) continue;
 				if (_occupiedCells.Contains(cell)) continue;
-				if (GD.Randf() >= 0.35f) continue;
+				if (GD.Randf() >= 0.15f) continue;
 
 				string oreType = RollOreType();
 				if (oreType == "") continue;

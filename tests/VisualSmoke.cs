@@ -77,13 +77,16 @@ public partial class VisualSmoke : Node
 		var tileLayer = world.GetNode<Node2D>("TileLayer");
 		Check(tileLayer.GetChildCount() == 320,
 			$"map is the 320-tile plus island ({tileLayer.GetChildCount()} tiles)");
+		bool tilesFillCells = true;
 		foreach (var tile in tileLayer.GetChildren())
 		{
 			if (tile is not Sprite2D { Texture: not null } s) continue;
+			tilesFillCells &= s.Scale == Vector2.One && !s.Centered;
 			// Lighting wraps each diffuse in a CanvasTexture; the wrapper RID is shared.
 			var diffuse = s.Texture is CanvasTexture canvas ? canvas.DiffuseTexture : s.Texture;
 			distinctTiles.Add(diffuse.GetRid().Id);
 		}
+		Check(tilesFillCells, "terrain tiles fill their cells (no gaps)");
 		Check(distinctTiles.Count >= 2, $"map shows more than one tile look (got {distinctTiles.Count})");
 
 		var grass = GD.Load<Texture2D>("res://assets/terrain/terrain_grass.png");
