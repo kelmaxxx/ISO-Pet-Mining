@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://dcc0bp1gjlt7l"]
+[gd_scene load_steps=3 format=3 uid="uid://dcc0bp1gjlt7l"]
 
 [ext_resource type="Script" path="res://scripts/HUD.cs" id="1_hud_script"]
+[ext_resource type="PackedScene" path="res://scenes/PetInventory.tscn" id="2_pet_inventory"]
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -35,6 +36,10 @@ text = "Gems: 0"
 [node name="PrestigeLabel" type="Label" parent="TopBar"]
 layout_mode = 2
 text = "Prestige 0 (x1.0)"
+
+[node name="PetsButton" type="Button" parent="TopBar"]
+layout_mode = 2
+text = "Pets"
 
 [node name="ShopPopup" type="Control" parent="."]
 visible = false
@@ -201,6 +206,78 @@ custom_minimum_size = Vector2(240, 32)
 layout_mode = 2
 text = "Close"
 
+[node name="PetInventory" parent="." instance=ExtResource("2_pet_inventory")]
+
+[node name="HatchReveal" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dimmer" type="ColorRect" parent="HatchReveal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="CenterContainer" type="CenterContainer" parent="HatchReveal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HatchReveal/CenterContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HatchReveal/CenterContainer/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HatchReveal/CenterContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="RevealTitle" type="Label" parent="HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "You hatched..."
+horizontal_alignment = 1
+
+[node name="Sprite" type="TextureRect" parent="HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+size_flags_horizontal = 4
+pivot_offset = Vector2(64, 64)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Pet"
+horizontal_alignment = 1
+
+[node name="StatsLabel" type="Label" parent="HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Power 0"
+horizontal_alignment = 1
+
+[node name="ContinueButton" type="Button" parent="HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 32)
+layout_mode = 2
+text = "Nice!"
+
+[connection signal="pressed" from="TopBar/PetsButton" to="." method="OnPetsPressed"]
+[connection signal="pressed" from="HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ContinueButton" to="." method="OnCloseHatchReveal"]
 [connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PrestigeButton" to="." method="OnPrestigePressed"]
 [connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CoinBoostButton" to="." method="OnCoinBoostPressed"]
 [connection signal="pressed" from="ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LuckyBoostButton" to="." method="OnLuckyBoostPressed"]

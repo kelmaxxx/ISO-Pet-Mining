@@ -96,6 +96,37 @@ public partial class VisualSmoke : Node
 		Check(!isGold, "meteor does not reuse the gold ore art");
 		meteor.QueueFree();
 
+		var hud = world.GetNode<HUD>("UI/HUD");
+		var inventory = hud.GetNode<PetInventory>("PetInventory");
+		inventory.Open();
+		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		int listedPets = inventory
+			.GetNode<VBoxContainer>("CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ScrollContainer/PetList")
+			.GetChildCount();
+		Check(listedPets == GameManager.Instance.EquippedPets.Count,
+			$"pet inventory lists every pet ({listedPets}/{GameManager.Instance.EquippedPets.Count})");
+		inventory.Close();
+
+		hud.ShowHatchReveal(new Dictionary
+		{
+			["name"] = "Test Pup",
+			["icon"] = "dog",
+			["power"] = 3,
+			["rarity"] = "common",
+		});
+		Check(hud.GetNode<Control>("HatchReveal").Visible, "hatch reveal overlay opens");
+		Check(hud.GetNode<Label>("HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/NameLabel").Text == "Test Pup",
+			"hatch reveal shows the pet name");
+		hud.OnCloseHatchReveal();
+
+		if (GameManager.Instance.EquippedPets.Count >= GameManager.Instance.MaxPets)
+		{
+			int coinsBefore = GameManager.Instance.Coins;
+			var denied = GameManager.Instance.RollEgg("basic");
+			Check(denied.Count == 0 && GameManager.Instance.Coins == coinsBefore,
+				"full roster refuses an egg without charging");
+		}
+
 		GD.Print(_failures == 0 ? "VISUAL SMOKE: PASS" : $"VISUAL SMOKE: FAIL ({_failures})");
 		GetTree().Quit(_failures == 0 ? 0 : 1);
 	}
