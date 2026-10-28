@@ -4,17 +4,17 @@ using System.Collections.Generic;
 
 public partial class World : Node2D
 {
-	private const int Cols = 8;
-	private const int Rows = 8;
-	private const int TileW = 64;
-	private const int TileH = 32;
-	private const int GridOriginY = 180;
+	private const int Cols = 16;
+	private const int Rows = 16;
+	private const int TileW = 32;
+	private const int TileH = 16;
+	private const int GridOriginY = 70;
 
 	// Terrain art draws its top face 63x28 px inside a 64x64 canvas, so it has
-	// to be stretched onto the 64x32 cell or tiles never meet at the edges.
-	// shortcut: hardcoded to the current grass art; drop it if new terrain art
-	// is drawn at 64x32.
-	private static readonly Vector2 TerrainArtScale = new(64f / 63f, 32f / 28f);
+	// to be stretched onto the TileW x TileH cell or tiles never meet at the edges.
+	// shortcut: hardcoded to the current grass art; drop it when terrain art is
+	// exported at exactly 32x32 with a 32x16 top face.
+	private static readonly Vector2 TerrainArtScale = new(TileW / 63f, TileH / 28f);
 
 	private static readonly PackedScene OreScene = GD.Load<PackedScene>("res://scenes/Ore.tscn");
 	private static readonly PackedScene CharacterScene = GD.Load<PackedScene>("res://scenes/Character.tscn");
@@ -67,6 +67,7 @@ public partial class World : Node2D
 	{
 		public int Col;
 		public int Row;
+		public int Size; // footprint in tiles (1 = 1x1, 2 = 2x2)
 		public string Type;
 		public string Label;
 		public string Texture;
@@ -77,8 +78,8 @@ public partial class World : Node2D
 	// a colored placeholder with the label is shown instead.
 	private static readonly BuildingDef[] BuildingDefs =
 	{
-		new BuildingDef { Col = 1, Row = 1, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
-		new BuildingDef { Col = 6, Row = 1, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
+		new BuildingDef { Col = 2,  Row = 2, Size = 2, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
+		new BuildingDef { Col = 11, Row = 2, Size = 2, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
 	};
 
 	public override void _Ready()
@@ -90,6 +91,9 @@ public partial class World : Node2D
 		SpawnBuildings();
 		SpawnOres();
 		SpawnCharacter();
+		// Loaded pets only exist in the save; spawn their nodes on startup too.
+		foreach (var petData in GameManager.Instance.EquippedPets)
+			SpawnPet(petData);
 		ResetMeteorTimer();
 		GD.Print("Game Started");
 	}
@@ -189,8 +193,9 @@ private void BuildTerrain()
 				if (!ResourceLoader.Exists(info.Texture)) continue;
 
 				var ore = OreScene.Instantiate<Ore>();
+				ore.Scale = new Vector2(0.5f, 0.5f); // 64px ore art on the 32px grid
 				var pos = GridToScreen(col, row);
-				ore.Position = new Vector2(pos.X, pos.Y - 16);
+				ore.Position = new Vector2(pos.X, pos.Y - 8);
 				ore.ZIndex = col + row + 1;
 				objectLayer.AddChild(ore);
 
@@ -215,17 +220,22 @@ private void BuildTerrain()
 
 	private void SpawnBuildings()
 	{
-		// Reserve the character's home cell so nothing else lands on it.
-		_occupiedCells.Add(CharacterCell);
+		// Reserve the character's home cell and its neighbors: a tall ore on the
+		// tile in front would otherwise cover the player.
+		for (int dr = -1; dr <= 1; dr++)
+			for (int dc = -1; dc <= 1; dc++)
+				_occupiedCells.Add(CharacterCell + new Vector2I(dc, dr));
 
 		var objectLayer = GetNode<Node2D>("ObjectLayer");
 		foreach (var def in BuildingDefs)
 		{
-			var cell = new Vector2I(def.Col, def.Row);
-			_occupiedCells.Add(cell);
+			for (int dr = 0; dr < def.Size; dr++)
+				for (int dc = 0; dc < def.Size; dc++)
+					_occupiedCells.Add(new Vector2I(def.Col + dc, def.Row + dr));
 
 			var building = BuildingScene.Instantiate<Building>();
-			var pos = GridToScreen(def.Col, def.Row);
+			// 64x64 art sits on a 2x2 footprint: anchor at the front corner.
+			var pos = GridToScreen(def.Col + def.Size - 1, def.Row + def.Size - 1);
 			building.Position = new Vector2(pos.X, pos.Y - 8);
 			objectLayer.AddChild(building);
 			building.Setup(def.Type, def.Label, def.Texture, def.Color);
@@ -267,7 +277,7 @@ private void BuildTerrain()
 		ore.Cell = chosen;
 
 		var pos = GridToScreen(chosen.X, chosen.Y);
-		return new Vector2(pos.X, pos.Y - 16);
+		return new Vector2(pos.X, pos.Y - 8);
 	}
 
 	private void SpawnCharacter()
@@ -385,7 +395,7 @@ private void BuildTerrain()
 		var objectLayer = GetNode<Node2D>("ObjectLayer");
 		var ore = OreScene.Instantiate<Ore>();
 		var pos = GridToScreen(chosen.X, chosen.Y);
-		ore.Position = new Vector2(pos.X, pos.Y - 16);
+		ore.Position = new Vector2(pos.X, pos.Y - 8);
 		ore.ZIndex = chosen.X + chosen.Y + 1;
 		objectLayer.AddChild(ore);
 
@@ -405,7 +415,7 @@ private void BuildTerrain()
 		ore.OreClicked += OnOreClicked;
 		_oreNodes.Add(ore);
 
-		ore.Scale = new Vector2(1.5f, 1.5f);
+		ore.Scale = new Vector2(0.75f, 0.75f); // 1.5x a normal ore on the 32px grid
 
 		ScreenShake();
 		ShowAnnouncement("A Golden Meteor has crashed!");
@@ -417,7 +427,7 @@ private void BuildTerrain()
 		var tween = CreateTween();
 		for (int i = 0; i < 4; i++)
 		{
-			Vector2 offset = new Vector2((float)GD.RandRange(-6, 6), (float)GD.RandRange(-6, 6));
+			Vector2 offset = new Vector2((float)GD.RandRange(-3, 3), (float)GD.RandRange(-3, 3));
 			tween.TweenProperty(this, "position", originalPos + offset, 0.05);
 		}
 		tween.TweenProperty(this, "position", originalPos, 0.05);

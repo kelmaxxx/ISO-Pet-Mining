@@ -288,7 +288,7 @@ public partial class GameManager : Node
 	public const int MaxSpeedLevel = 10;
 	public const int MaxPetsLevelCap = 5;
 
-	public float GetPlayerSpeed() => 80f + SpeedLevel * 15f;
+	public float GetPlayerSpeed() => 40f + SpeedLevel * 7.5f;
 
 	public int GetSpeedUpgradeCost()
 	{

@@ -172,7 +172,7 @@ public static class Lighting
 	{
 		if (_shadowTex != null) return _shadowTex;
 
-		const int w = 64, h = 32;
+		const int w = 32, h = 16;
 		var img = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
 		float cx = (w - 1) / 2f;
 		float cy = (h - 1) / 2f;

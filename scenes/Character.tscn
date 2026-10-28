@@ -3,8 +3,8 @@
 [ext_resource type="Script" path="res://scripts/Character.cs" id="1_chr_script"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_chr"]
-radius = 6.0
-height = 20.0
+radius = 3.0
+height = 12.0
 
 [node name="Character" type="CharacterBody2D"]
 script = ExtResource("1_chr_script")

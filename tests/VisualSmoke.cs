@@ -13,12 +13,20 @@ public partial class VisualSmoke : Node
 		// The test loads the real save; stop the idle tick so it can't earn/save.
 		GameManager.Instance.SetProcess(false);
 
+		var size = GetTree().Root.ContentScaleSize;
+		Check(size == new Vector2I(640, 360), $"internal viewport is 640x360 (got {size.X}x{size.Y})");
+
 		var world = GD.Load<PackedScene>("res://scenes/World.tscn").Instantiate<Node2D>();
 		AddChild(world);
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 
 		var objectLayer = world.GetNode<Node2D>("ObjectLayer");
+
+		int savedPets = GameManager.Instance.EquippedPets.Count;
+		int spawnedPets = GetTree().GetNodesInGroup("pets").Count;
+		Check(savedPets == 0 || spawnedPets >= savedPets,
+			$"saved pets spawned ({spawnedPets}/{savedPets})");
 
 		var character = objectLayer.GetNodeOrNull<Character>("Character");
 		Check(character != null, "character node spawned");

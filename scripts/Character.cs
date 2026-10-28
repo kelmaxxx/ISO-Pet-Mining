@@ -24,7 +24,7 @@ public partial class Character : CharacterBody2D
 		if (_sprite.SpriteFrames == null || !_sprite.SpriteFrames.HasAnimation("idle"))
 		{
 			_sprite.SpriteFrames = PlaceholderArt.CharacterFrames();
-			_sprite.Scale = new Vector2(1.4f, 1.4f); // placeholder art is drawn small
+			_sprite.Scale = new Vector2(0.5f, 0.5f); // 64px art on the 32px grid
 		}
 
 		PlayDirectional("idle");
@@ -48,7 +48,7 @@ public partial class Character : CharacterBody2D
 		Vector2 targetPos = TargetOre.GlobalPosition;
 		float dist = GlobalPosition.DistanceTo(targetPos);
 
-		if (dist > 30f)
+		if (dist > 15f)
 		{
 			Vector2 dir = (targetPos - GlobalPosition).Normalized();
 			Velocity = dir * _moveSpeed;

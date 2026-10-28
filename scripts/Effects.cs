@@ -16,11 +16,11 @@ public static class Effects
         {
             Direction = new Vector3(0, -1, 0),
             Spread = 180f,
-            InitialVelocityMin = 60f * scale,
-            InitialVelocityMax = 160f * scale,
-            Gravity = new Vector3(0, 300f, 0),
-            DampingMin = 30f,
-            DampingMax = 80f,
+            InitialVelocityMin = 30f * scale,
+            InitialVelocityMax = 80f * scale,
+            Gravity = new Vector3(0, 150f, 0),
+            DampingMin = 15f,
+            DampingMax = 40f,
             ScaleMin = 1.5f * scale,
             ScaleMax = 3f * scale,
             Color = color,
@@ -49,7 +49,7 @@ public static class Effects
     {
         if (_particleTex != null) return _particleTex;
 
-        const int size = 16;
+        const int size = 8;
         var img = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
         float c = (size - 1) / 2f;
         for (int y = 0; y < size; y++)

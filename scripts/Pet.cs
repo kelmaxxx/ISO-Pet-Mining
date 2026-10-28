@@ -6,7 +6,7 @@ public partial class Pet : CharacterBody2D
 	public Dictionary PetData { get; private set; } = new();
 	public Ore TargetOre { get; set; }
 	private float _attackTimer = 0f;
-	private float _moveSpeed = 60f;
+	private float _moveSpeed = 30f;
 
 	private AnimatedSprite2D _sprite;
 
@@ -25,7 +25,7 @@ public partial class Pet : CharacterBody2D
 			_sprite.SpriteFrames = PlaceholderArt.PetFrames(
 				data.TryGetValue("icon", out var icon) ? icon.AsString() : "",
 				data.TryGetValue("rarity", out var rarity) ? rarity.AsString() : "common");
-			_sprite.Scale = new Vector2(1.25f, 1.25f); // placeholder art is drawn small
+			_sprite.Scale = new Vector2(0.5f, 0.5f); // 64px art on the 32px grid
 		}
 		SafePlay("walk");
 
@@ -51,7 +51,7 @@ public partial class Pet : CharacterBody2D
 		Vector2 targetPos = TargetOre.GlobalPosition;
 		float dist = GlobalPosition.DistanceTo(targetPos);
 
-		if (dist > 25f)
+		if (dist > 13f)
 		{
 			Vector2 dir = (targetPos - GlobalPosition).Normalized();
 			Velocity = dir * _moveSpeed;

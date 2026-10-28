@@ -51,6 +51,7 @@ public partial class Ore : Node2D
 		{
 			_hpBar.MaxValue = MaxHp;
 			_hpBar.Value = CurrentHp;
+			_hpBar.Visible = false; // only show damage on ores the player has hit
 		}
 	}
 
@@ -69,7 +70,11 @@ public partial class Ore : Node2D
 			dmg *= 2;
 
 		CurrentHp = Mathf.Max(0f, CurrentHp - dmg);
-		if (_hpBar != null) _hpBar.Value = CurrentHp;
+		if (_hpBar != null)
+		{
+			_hpBar.Value = CurrentHp;
+			_hpBar.Visible = true;
+		}
 		Shake();
 		if (CurrentHp <= 0f) _ = BreakAndRespawn();
 	}
@@ -78,8 +83,8 @@ public partial class Ore : Node2D
 	{
 		float baseX = Position.X;
 		var tween = CreateTween();
-		tween.TweenProperty(this, "position:x", baseX + 3, 0.05);
-		tween.TweenProperty(this, "position:x", baseX - 3, 0.05);
+		tween.TweenProperty(this, "position:x", baseX + 1.5f, 0.05);
+		tween.TweenProperty(this, "position:x", baseX - 1.5f, 0.05);
 		tween.TweenProperty(this, "position:x", baseX, 0.05);
 	}
 
@@ -120,7 +125,11 @@ public partial class Ore : Node2D
 			Position = World.RequestRespawnPosition(this);
 
 		CurrentHp = MaxHp;
-		if (_hpBar != null) _hpBar.Value = CurrentHp;
+		if (_hpBar != null)
+		{
+			_hpBar.Value = CurrentHp;
+			_hpBar.Visible = false;
+		}
 		IsDead = false;
 		Visible = true;
 	}
