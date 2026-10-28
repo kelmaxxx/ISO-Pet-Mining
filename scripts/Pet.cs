@@ -9,6 +9,7 @@ public partial class Pet : CharacterBody2D
 	private float _moveSpeed = 30f;
 
 	private AnimatedSprite2D _sprite;
+	private ShadowCaster2D _shadow;
 
 	public override void _Ready()
 	{
@@ -27,12 +28,16 @@ public partial class Pet : CharacterBody2D
 				data.TryGetValue("rarity", out var rarity) ? rarity.AsString() : "common");
 			_sprite.Scale = new Vector2(0.5f, 0.5f); // 64px art on the 32px grid
 		}
+		Lighting.MakeLit(_sprite);
 		SafePlay("walk");
 
 		var frame = _sprite.SpriteFrames.GetFrameTexture("walk", 0);
 		float height = frame?.GetHeight() ?? 64;
 		float scale = _sprite.Scale.Y;
-		Lighting.AttachDropShadow(this, (height * 0.5f - 12f) * scale, height * 0.42f * scale);
+		if (_shadow == null)
+			_shadow = ShadowCaster2D.Attach(this, _sprite, new Vector2(0f, (height * 0.5f - 12f) * scale));
+		else
+			_shadow.Refresh();
 	}
 
 	public override void _PhysicsProcess(double delta)

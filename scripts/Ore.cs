@@ -20,6 +20,7 @@ public partial class Ore : Node2D
 	private Sprite2D _oreSprite;
 	private ProgressBar _hpBar;
 	private Area2D _clickArea;
+	private ShadowCaster2D _shadow;
 
 	public override void _Ready()
 	{
@@ -29,9 +30,6 @@ public partial class Ore : Node2D
 
 		_clickArea.InputPickable = true;
 		_clickArea.InputEvent += OnClick;
-
-		// Soft shadow under the ore to ground it on the tile.
-		Lighting.AttachDropShadow(this, 4f, 34f);
 	}
 
 	public void Setup(string typeName, Dictionary data)
@@ -46,6 +44,11 @@ public partial class Ore : Node2D
 			_oreSprite.Texture = Lighting.GetLitTexture(GD.Load<Texture2D>(texturePath));
 		else if (typeName == "meteor")
 			_oreSprite.Texture = Lighting.GetLitTexture(PlaceholderArt.MeteorTexture());
+
+		if (_shadow == null)
+			_shadow = ShadowCaster2D.Attach(this, _oreSprite, new Vector2(0f, 4f));
+		else
+			_shadow.Refresh();
 
 		if (_hpBar != null)
 		{
