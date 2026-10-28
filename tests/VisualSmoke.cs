@@ -79,6 +79,11 @@ public partial class VisualSmoke : Node
 			Check(sprite.SpriteFrames?.HasAnimation("idle") == true, "character has an idle animation");
 			Check(sprite.SpriteFrames?.HasAnimation("attack") == true, "character has an attack animation");
 			Check(sprite.SpriteFrames?.GetFrameTexture("idle", 0) != null, "character frame has a texture");
+			Check(sprite.SpriteFrames?.GetFrameTexture("idle", 0) is CanvasTexture { NormalTexture: not null },
+				"character frames carry normal maps");
+			var shadowCaster = character.GetNodeOrNull<ShadowCaster2D>("ShadowCaster");
+			Check(shadowCaster?.Shadow != null && shadowCaster.Shadow.LightMask == 0,
+				"character has an unlit replica shadow");
 		}
 
 		var pet = GD.Load<PackedScene>("res://scenes/Pet.tscn").Instantiate<Pet>();
@@ -94,7 +99,20 @@ public partial class VisualSmoke : Node
 		Check(petSprite.SpriteFrames?.HasAnimation("walk") == true, "pet has a walk animation");
 		Check(petSprite.SpriteFrames?.HasAnimation("attack") == true, "pet has an attack animation");
 		Check(petSprite.SpriteFrames?.GetFrameTexture("walk", 0) != null, "pet frame has a texture");
+		Check(petSprite.SpriteFrames?.GetFrameTexture("walk", 0) is CanvasTexture { NormalTexture: not null },
+			"pet frames carry normal maps");
+		Check(pet.GetNodeOrNull<ShadowCaster2D>("ShadowCaster")?.Shadow != null, "pet has a replica shadow");
 		pet.QueueFree();
+
+		var cycle = world.GetNodeOrNull<DayNightCycle>("DayNightCycle");
+		Check(cycle?.Sun != null, "day/night cycle drives the sun");
+		if (cycle?.GetNodeOrNull<CanvasModulate>("Ambient") is CanvasModulate ambient)
+		{
+			float noon = ambient.Color.R;
+			cycle.SetTimeOfDay(0f);
+			Check(ambient.Color.R < noon, "night lowers the ambient light");
+			cycle.SetTimeOfDay(0.5f);
+		}
 
 		var distinctTiles = new HashSet<ulong>();
 		var tileLayer = world.GetNode<Node2D>("TileLayer");
@@ -131,6 +149,7 @@ public partial class VisualSmoke : Node
 		});
 		var meteorSprite = meteor.GetNode<Sprite2D>("OreSprite");
 		Check(meteorSprite.Texture != null, "meteor has a texture");
+		Check(meteorSprite.Texture is CanvasTexture { NormalTexture: not null }, "ore texture has a normal map");
 		var gold = GD.Load<Texture2D>("res://assets/ores/ore_gold.png");
 		var isGold = meteorSprite.Texture is CanvasTexture ct && ct.DiffuseTexture == gold;
 		Check(!isGold, "meteor does not reuse the gold ore art");

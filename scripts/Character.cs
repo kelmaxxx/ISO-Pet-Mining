@@ -27,12 +27,13 @@ public partial class Character : CharacterBody2D
 			_sprite.Scale = new Vector2(0.5f, 0.5f); // 64px art on the 32px grid
 		}
 
+		Lighting.MakeLit(_sprite);
 		PlayDirectional("idle");
 
 		var frame = _sprite.SpriteFrames.GetFrameTexture("idle", 0);
 		float height = frame?.GetHeight() ?? 64;
 		float scale = _sprite.Scale.Y;
-		Lighting.AttachDropShadow(this, (height * 0.5f - 4f) * scale, height * 0.55f * scale);
+		ShadowCaster2D.Attach(this, _sprite, new Vector2(0f, (height * 0.5f - 4f) * scale));
 	}
 
 	public override void _PhysicsProcess(double delta)

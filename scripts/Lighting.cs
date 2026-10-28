@@ -5,28 +5,19 @@ using System.Collections.Generic;
 //
 // How it works (no new art needed):
 //   * Each sprite's texture is wrapped in a CanvasTexture that carries a
-//     procedurally generated NORMAL MAP (derived from the art's own
-//     brightness). A DirectionalLight2D "sun" then shades each pixel by the
-//     direction it faces -> the flat sprite looks rounded / embossed.
-//   * A CanvasModulate dims the scene slightly so the sun's light reads.
-//   * A soft elliptical DROP SHADOW is dropped under each object to ground it.
+//     NORMAL MAP: a sibling "_n.png" file if one exists, otherwise one is
+//     generated from the art's own brightness. DayNightCycle's sun then shades
+//     each pixel by the direction it faces -> flat sprites look rounded.
+//   * AnimatedSprite2D frames get the same treatment (AnimatedSprite2D has no
+//     normal_map property; wrapping each frame texture is the equivalent).
+//   * DayNightCycle also drives a CanvasModulate ambient tint.
+//   * ShadowCaster2D drops a flattened replica of the sprite on the ground;
+//     AttachDropShadow remains the cheap option for blocky buildings.
 //
-// Everything is tunable from the constants below. If the relief looks
-// "engraved" instead of "raised", flip NormalYSign.
+// Normal generation is tunable below. If the relief looks "engraved" instead
+// of "raised", flip NormalYSign.
 public static class Lighting
 {
-	// ---- Tuning -------------------------------------------------------------
-
-	// Ambient color the whole world is multiplied by. Keep it bright for the
-	// "subtle daytime" look; lower it toward 0.4 for a moodier scene.
-	private static readonly Color Ambient = new(0.78f, 0.78f, 0.84f);
-
-	// The "sun". Energy is how much light it ADDS on top of the ambient.
-	private static readonly Color SunColor = new(1.0f, 0.97f, 0.90f);
-	private const float SunEnergy = 0.38f;     // higher = stronger relief & brighter
-	private const float SunRotationDeg = 115f; // where the light comes from
-	private const float SunHeight = 0.55f;     // 0..1, how grazing the light is on normals
-
 	// Normal-map generation.
 	private const float NormalStrength = 2.2f; // bump intensity (raise for more relief)
 	private const float NormalYSign = 1.0f;    // flip to -1 if relief looks inverted
@@ -42,39 +33,34 @@ public static class Lighting
 	// -------------------------------------------------------------------------
 	// World setup: ambient + sun. Call once from World._Ready().
 	// -------------------------------------------------------------------------
-	public static void BuildWorldLighting(Node2D worldRoot)
+	public static DayNightCycle BuildWorldLighting(Node2D worldRoot)
 	{
-		var modulate = new CanvasModulate { Color = Ambient };
-		worldRoot.AddChild(modulate);
-
-		var sun = new DirectionalLight2D
-		{
-			Color = SunColor,
-			Energy = SunEnergy,
-			Height = SunHeight,
-			RotationDegrees = SunRotationDeg,
-			BlendMode = Light2D.BlendModeEnum.Add,
-		};
-		worldRoot.AddChild(sun);
+		var cycle = new DayNightCycle { Name = "DayNightCycle" };
+		worldRoot.AddChild(cycle);
+		return cycle;
 	}
 
 	// -------------------------------------------------------------------------
-	// Returns a CanvasTexture (diffuse + generated normal map) for a texture.
+	// Returns a CanvasTexture (diffuse + normal map) for a texture.
+	// An authored sibling "<name>_n.png" wins over the generated normal.
 	// Cached & shared, so 64 grass tiles only generate one normal map.
 	// Falls back to the plain texture if anything goes wrong.
 	// -------------------------------------------------------------------------
 	public static Texture2D GetLitTexture(Texture2D diffuse)
 	{
 		if (diffuse == null) return null;
+		if (diffuse is CanvasTexture existing) return existing;
 
 		ulong key = diffuse.GetRid().Id;
 		if (_litCache.TryGetValue(key, out var cached))
 			return cached;
 
-		var normal = GenerateNormalMap(diffuse);
+		var normal = LoadAuthoredNormal(diffuse) ?? GenerateNormalMap(diffuse);
 		if (normal == null)
 			return diffuse;
 
+		// Generated normals use the whole texture image; atlas frames need a
+		// per-region normal when real atlas art lands.
 		var ct = new CanvasTexture
 		{
 			DiffuseTexture = diffuse,
@@ -89,6 +75,40 @@ public static class Lighting
 	{
 		if (sprite?.Texture == null) return;
 		sprite.Texture = GetLitTexture(sprite.Texture);
+	}
+
+	// Wraps every frame of an AnimatedSprite2D in a normal-mapped CanvasTexture.
+	// Safe to call more than once / on shared SpriteFrames: lit frames are skipped.
+	public static void MakeLit(AnimatedSprite2D animated)
+	{
+		var frames = animated?.SpriteFrames;
+		if (frames == null) return;
+
+		foreach (var anim in frames.GetAnimationNames())
+		{
+			int count = frames.GetFrameCount(anim);
+			for (int i = 0; i < count; i++)
+			{
+				var frame = frames.GetFrameTexture(anim, i);
+				if (frame == null || frame is CanvasTexture) continue;
+				var lit = GetLitTexture(frame);
+				if (!ReferenceEquals(lit, frame))
+					frames.SetFrame(anim, i, lit, frames.GetFrameDuration(anim, i));
+			}
+		}
+	}
+
+	// "<folder>/<name>.png" -> "<folder>/<name>_n.png" when that file exists.
+	private static Texture2D LoadAuthoredNormal(Texture2D diffuse)
+	{
+		string path = diffuse.ResourcePath;
+		if (string.IsNullOrEmpty(path)) return null;
+
+		int dot = path.LastIndexOf('.');
+		if (dot <= 0) return null;
+
+		string normalPath = path[..dot] + "_n" + path[dot..];
+		return ResourceLoader.Exists(normalPath) ? GD.Load<Texture2D>(normalPath) : null;
 	}
 
 	// -------------------------------------------------------------------------
