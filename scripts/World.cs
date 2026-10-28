@@ -19,12 +19,7 @@ public partial class World : Node2D
 	private static readonly PackedScene PetScene = GD.Load<PackedScene>("res://scenes/Pet.tscn");
 	private static readonly PackedScene BuildingScene = GD.Load<PackedScene>("res://scenes/Building.tscn");
 
-	private static readonly System.Collections.Generic.Dictionary<string, string> TerrainPaths = new()
-	{
-		["grass"] = "res://assets/terrain/terrain_grass.png",
-		["dirt"] = "res://assets/terrain/terrain_dirt.png",
-		["stone"] = "res://assets/terrain/terrain_stone.png",
-	};
+	private const string TerrainPath = "res://assets/terrain/terrain_grass.png";
 
 	private class OreInfo
 	{
@@ -45,7 +40,6 @@ public partial class World : Node2D
 		["meteor"] = new OreInfo { Hp = 350, Reward = "gems", Amount = 15, Chance = 0.0f, Texture = "res://assets/ores/ore_meteor.png" },
 	};
 
-	private readonly System.Collections.Generic.Dictionary<string, Texture2D> _terrainCache = new();
 	private Node _characterNode;
 	private readonly List<Ore> _oreNodes = new();
 
@@ -136,58 +130,31 @@ public partial class World : Node2D
 		return !((col < arm || col >= Cols - arm) && (row < arm || row >= Rows - arm));
 	}
 
-	private Texture2D LoadTerrain(string typeName)
-	{
-		if (_terrainCache.TryGetValue(typeName, out var cached))
-			return cached;
-
-		string path = TerrainPaths.GetValueOrDefault(typeName, "");
-		Texture2D tex = null;
-		if (path != "" && ResourceLoader.Exists(path))
-			tex = GD.Load<Texture2D>(path);
-
-		_terrainCache[typeName] = tex;
-		return tex;
-	}
-
-	private Texture2D ResolveTerrain(string preferred)
-	{
-		var tex = LoadTerrain(preferred);
-		if (tex != null) return tex;
-
-		var grass = LoadTerrain("grass");
-		if (grass == null || preferred == "grass") return grass;
-
-		// Missing dirt/stone art: recolor the grass tile so the map still varies.
-		var variant = PlaceholderArt.TerrainVariant(grass, preferred);
-		_terrainCache[preferred] = variant;
-		return variant;
-	}
-
-private void BuildTerrain()
+	private void BuildTerrain()
 	{
 		var tileLayer = GetNode<Node2D>("TileLayer");
-		string[] tileTypes = { "grass", "dirt", "stone" };
-		float[] weights = { 0.7f, 0.2f, 0.1f };
+		var grass = GD.Load<Texture2D>(TerrainPath);
+		if (grass == null)
+		{
+			GD.PushWarning($"Missing terrain art: {TerrainPath}");
+			return;
+		}
 
+		// One shared lit texture: every tile is grass and lighting wraps it once.
+		var texture = Lighting.GetLitTexture(grass);
 		for (int row = 0; row < Rows; row++)
 		{
 			for (int col = 0; col < Cols; col++)
 			{
 				if (!InMap(col, row)) continue;
-				string typeName = WeightedRandom(tileTypes, weights);
-				var tex = ResolveTerrain(typeName);
-				if (tex == null) continue;
-
-				var sprite = new Sprite2D
+				tileLayer.AddChild(new Sprite2D
 				{
-					Texture = Lighting.GetLitTexture(tex),
+					Texture = texture,
 					Position = GridToScreen(col, row),
 					Offset = TerrainTopFaceOffset,
 					Centered = false,
 					ZIndex = col + row,
-				};
-				tileLayer.AddChild(sprite);
+				});
 			}
 		}
 	}

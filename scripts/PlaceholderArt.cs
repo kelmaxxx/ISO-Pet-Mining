@@ -20,7 +20,6 @@ public static class PlaceholderArt
 	private static SpriteFrames _character;
 	private static Texture2D _meteor;
 	private static readonly Dictionary<string, SpriteFrames> _pets = new();
-	private static readonly Dictionary<string, Texture2D> _terrain = new();
 
 	// ------------------------------------------------------------- character --
 	public static SpriteFrames CharacterFrames()
@@ -250,48 +249,6 @@ public static class PlaceholderArt
 		}
 	}
 
-	// -------------------------------------------------------------- terrain --
-	// Recolors the grass tile into brown/grey variants while keeping its exact
-	// silhouette, so generated tiles line up with the real art pixel-for-pixel.
-	public static Texture2D TerrainVariant(Texture2D source, string kind)
-	{
-		string key = kind + "|" + source.GetRid().Id;
-		if (_terrain.TryGetValue(key, out var cached)) return cached;
-
-		Image img = source.GetImage();
-		if (img == null) return source;
-		if (img.IsCompressed()) img.Decompress();
-
-		var copy = (Image)img.Duplicate();
-		copy.Convert(Image.Format.Rgba8);
-
-		bool dirt = kind == "dirt";
-		var topBase = dirt ? new Color(0.52f, 0.36f, 0.21f) : new Color(0.52f, 0.52f, 0.55f);
-		var sideBase = dirt ? new Color(0.36f, 0.24f, 0.14f) : new Color(0.38f, 0.38f, 0.41f);
-
-		for (int y = 0; y < copy.GetHeight(); y++)
-		{
-			for (int x = 0; x < copy.GetWidth(); x++)
-			{
-				var c = copy.GetPixel(x, y);
-				if (c.A < 0.1f || c.V < 0.18f) continue; // transparent pixels / outline
-
-				bool top = c.H > 0.18f && c.H < 0.50f && c.S > 0.12f;
-				var baseColor = top ? topBase : sideBase;
-				float shade = 0.55f + c.V * 0.70f + (Hash(x, y) - 0.5f) * 0.10f;
-				copy.SetPixel(x, y, new Color(
-					Mathf.Clamp(baseColor.R * shade, 0f, 1f),
-					Mathf.Clamp(baseColor.G * shade, 0f, 1f),
-					Mathf.Clamp(baseColor.B * shade, 0f, 1f),
-					c.A));
-			}
-		}
-
-		var tex = ImageTexture.CreateFromImage(copy);
-		_terrain[key] = tex;
-		return tex;
-	}
-
 	// --------------------------------------------------------------- meteor --
 	public static Texture2D MeteorTexture()
 	{
@@ -386,17 +343,5 @@ public static class PlaceholderArt
 		frames.SetAnimationLoopMode(name, SpriteFrames.LoopMode.Linear);
 		foreach (var image in images)
 			frames.AddFrame(name, ImageTexture.CreateFromImage(image));
-	}
-
-	// Stable per-pixel noise so tiles look the same on every launch.
-	private static float Hash(int x, int y)
-	{
-		unchecked
-		{
-			uint n = (uint)(x * 374761393 + y * 668265263);
-			n = (n ^ (n >> 13)) * 1274126177;
-			n ^= n >> 16;
-			return (n & 0xFFFF) / 65535f;
-		}
 	}
 }

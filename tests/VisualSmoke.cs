@@ -128,14 +128,9 @@ public partial class VisualSmoke : Node
 			distinctTiles.Add(diffuse.GetRid().Id);
 		}
 		Check(tilesFillCells, "terrain tiles fill their cells (no gaps)");
-		Check(distinctTiles.Count >= 2, $"map shows more than one tile look (got {distinctTiles.Count})");
-
 		var grass = GD.Load<Texture2D>("res://assets/terrain/terrain_grass.png");
-		var dirt = PlaceholderArt.TerrainVariant(grass, "dirt");
-		Check(dirt.GetWidth() == grass.GetWidth() && dirt.GetHeight() == grass.GetHeight(),
-			"terrain variant keeps the tile size");
-		Check(!System.Linq.Enumerable.SequenceEqual(grass.GetImage().GetData(), dirt.GetImage().GetData()),
-			"terrain variant is recolored");
+		Check(distinctTiles.Count == 1 && distinctTiles.Contains(grass.GetRid().Id),
+			$"map is grass only (got {distinctTiles.Count} tile looks)");
 
 		var meteor = GD.Load<PackedScene>("res://scenes/Ore.tscn").Instantiate<Ore>();
 		objectLayer.AddChild(meteor);
