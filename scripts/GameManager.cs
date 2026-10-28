@@ -284,6 +284,9 @@ public partial class GameManager : Node
 
 	public Dictionary RollEgg(string eggType)
 	{
+		// Refuse before charging: the oldest pet used to be silently deleted here.
+		if (EquippedPets.Count >= MaxPets) return new Dictionary();
+
 		var cost = EggCosts.TryGetValue(eggType, out var c) ? c : EggCosts["basic"];
 		if (cost.Coins > 0 && !SpendCoins(cost.Coins)) return new Dictionary();
 		if (cost.Gems > 0 && !SpendGems(cost.Gems)) return new Dictionary();
@@ -299,8 +302,6 @@ public partial class GameManager : Node
 			{
 				var pet = pool[i].Duplicate();
 				EquippedPets.Add(pet);
-				if (EquippedPets.Count > MaxPets)
-					EquippedPets.RemoveAt(0);
 				EmitSignal(SignalName.PetAdded, pet);
 				SaveGame();
 				return pet;

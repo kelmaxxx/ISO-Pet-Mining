@@ -12,6 +12,11 @@ public partial class HUD : Control
 
 	private Control _shopPopup;
 	private Control _hatchPopup;
+	private PetInventory _petInventory;
+	private Control _hatchReveal;
+	private TextureRect _revealSprite;
+	private Label _revealName;
+	private Label _revealStats;
 
 	private const string PrestigeCostLabelPath =
 		"ShopPopup/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PrestigeButton/PrestigeCostLabel";
@@ -29,6 +34,13 @@ public partial class HUD : Control
 		_hatchPopup = GetNode<Control>("HatchPopup");
 		_shopPopup.Visible = false;
 		_hatchPopup.Visible = false;
+
+		_petInventory = GetNode<PetInventory>("PetInventory");
+		_hatchReveal = GetNode<Control>("HatchReveal");
+		_revealSprite = GetNode<TextureRect>("HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/Sprite");
+		_revealName = GetNode<Label>("HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/NameLabel");
+		_revealStats = GetNode<Label>("HatchReveal/CenterContainer/PanelContainer/MarginContainer/VBoxContainer/StatsLabel");
+		_hatchReveal.Visible = false;
 
 		var gm = GameManager.Instance;
 		gm.CoinsChanged += UpdateCoins;
@@ -145,10 +157,48 @@ public partial class HUD : Control
 
 	private void HatchEgg(string eggType)
 	{
-		var pet = GameManager.Instance.RollEgg(eggType);
+		var gm = GameManager.Instance;
+		if (gm.EquippedPets.Count >= gm.MaxPets)
+		{
+			ShowAnnouncement($"Pet roster full ({gm.MaxPets}) — upgrade Max Pets in the Shop");
+			return;
+		}
+		var pet = gm.RollEgg(eggType);
 		if (pet.Count == 0) return;
 		var world = GetTree().CurrentScene as World;
 		world?.SpawnPet(pet);
+		_hatchPopup.Visible = false;
+		ShowHatchReveal(pet);
+	}
+
+	public void OnPetsPressed()
+	{
+		_shopPopup.Visible = false;
+		_hatchPopup.Visible = false;
+		_petInventory.Open();
+	}
+
+	public void ShowHatchReveal(Dictionary pet)
+	{
+		string icon = pet.TryGetValue("icon", out var i) ? i.AsString() : "dog";
+		string rarity = pet.TryGetValue("rarity", out var r) ? r.AsString() : "common";
+		float power = pet.TryGetValue("power", out var p) ? p.AsSingle() : 0f;
+
+		_revealSprite.Texture = PlaceholderArt.PetFrames(icon, rarity).GetFrameTexture("idle", 0);
+		_revealName.Text = pet.TryGetValue("name", out var n) ? n.AsString() : "Pet";
+		_revealStats.Text = $"{rarity.Capitalize()} · Power {power:0.#}";
+		_revealStats.AddThemeColorOverride("font_color", PetInventory.RarityColor(rarity));
+
+		_hatchReveal.Visible = true;
+		_revealSprite.Scale = new Vector2(0.4f, 0.4f);
+		CreateTween().TweenProperty(_revealSprite, "scale", Vector2.One, 0.3)
+			.SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+	}
+
+	public void OnCloseHatchReveal()
+	{
+		_hatchReveal.Visible = false;
+		_hatchPopup.Visible = true;
 	}
 
 	public void ShowAnnouncement(string text)
