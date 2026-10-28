@@ -35,6 +35,29 @@ public partial class VisualSmoke : Node
 		AudioManager.Instance?.PlayCoin();
 		AudioManager.Instance?.PlayHatch();
 
+		// The full-screen backdrop used to swallow every click on the map.
+		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+		var oreNodes = GetTree().GetNodesInGroup("ores");
+		if (oreNodes.Count > 0)
+		{
+			var ore = (Ore)oreNodes[0];
+			float hpBefore = ore.CurrentHp;
+			Vector2 clickPos = GetViewport().GetCanvasTransform() * (ore.GlobalPosition + new Vector2(0, -16));
+			GetViewport().PushInput(new InputEventMouseButton
+			{
+				ButtonIndex = MouseButton.Left, Pressed = true, Position = clickPos,
+				GlobalPosition = clickPos, ButtonMask = MouseButtonMask.Left,
+			});
+			GetViewport().PushInput(new InputEventMouseButton
+			{
+				ButtonIndex = MouseButton.Left, Pressed = false, Position = clickPos,
+				GlobalPosition = clickPos,
+			});
+			await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+			await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+			Check(ore.CurrentHp < hpBefore, "clicking an ore damages it");
+		}
+
 		int savedPets = GameManager.Instance.EquippedPets.Count;
 		int spawnedPets = GetTree().GetNodesInGroup("pets").Count;
 		Check(savedPets == 0 || spawnedPets >= savedPets,
