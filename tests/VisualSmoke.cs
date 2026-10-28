@@ -35,6 +35,29 @@ public partial class VisualSmoke : Node
 		AudioManager.Instance?.PlayCoin();
 		AudioManager.Instance?.PlayHatch();
 
+		// The full-screen backdrop used to swallow every click on the map.
+		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+		var oreNodes = GetTree().GetNodesInGroup("ores");
+		if (oreNodes.Count > 0)
+		{
+			var ore = (Ore)oreNodes[0];
+			float hpBefore = ore.CurrentHp;
+			Vector2 clickPos = GetViewport().GetCanvasTransform() * (ore.GlobalPosition + new Vector2(0, -16));
+			GetViewport().PushInput(new InputEventMouseButton
+			{
+				ButtonIndex = MouseButton.Left, Pressed = true, Position = clickPos,
+				GlobalPosition = clickPos, ButtonMask = MouseButtonMask.Left,
+			});
+			GetViewport().PushInput(new InputEventMouseButton
+			{
+				ButtonIndex = MouseButton.Left, Pressed = false, Position = clickPos,
+				GlobalPosition = clickPos,
+			});
+			await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+			await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+			Check(ore.CurrentHp < hpBefore, "clicking an ore damages it");
+		}
+
 		int savedPets = GameManager.Instance.EquippedPets.Count;
 		int spawnedPets = GetTree().GetNodesInGroup("pets").Count;
 		Check(savedPets == 0 || spawnedPets >= savedPets,
@@ -77,13 +100,16 @@ public partial class VisualSmoke : Node
 		var tileLayer = world.GetNode<Node2D>("TileLayer");
 		Check(tileLayer.GetChildCount() == 320,
 			$"map is the 320-tile plus island ({tileLayer.GetChildCount()} tiles)");
+		bool tilesFillCells = true;
 		foreach (var tile in tileLayer.GetChildren())
 		{
 			if (tile is not Sprite2D { Texture: not null } s) continue;
+			tilesFillCells &= s.Scale == Vector2.One && !s.Centered;
 			// Lighting wraps each diffuse in a CanvasTexture; the wrapper RID is shared.
 			var diffuse = s.Texture is CanvasTexture canvas ? canvas.DiffuseTexture : s.Texture;
 			distinctTiles.Add(diffuse.GetRid().Id);
 		}
+		Check(tilesFillCells, "terrain tiles fill their cells (no gaps)");
 		Check(distinctTiles.Count >= 2, $"map shows more than one tile look (got {distinctTiles.Count})");
 
 		var grass = GD.Load<Texture2D>("res://assets/terrain/terrain_grass.png");
