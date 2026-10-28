@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 public partial class World : Node2D
 {
-	private const int Cols = 16;
-	private const int Rows = 16;
+	private const int Cols = 32;
+	private const int Rows = 32;
 	private const int TileW = 32;
 	private const int TileH = 16;
 	private const int GridOriginY = 70;
@@ -63,6 +63,11 @@ public partial class World : Node2D
 	private double _meteorTimer = 0.0;
 	private double _nextMeteorTime = 0.0;
 
+	private Camera2D _camera;
+	private const float PanSpeed = 320f;
+	private const float MinZoom = 0.5f;
+	private const float MaxZoom = 2f;
+
 	private struct BuildingDef
 	{
 		public int Col;
@@ -78,8 +83,8 @@ public partial class World : Node2D
 	// a colored placeholder with the label is shown instead.
 	private static readonly BuildingDef[] BuildingDefs =
 	{
-		new BuildingDef { Col = 2,  Row = 2, Size = 2, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
-		new BuildingDef { Col = 11, Row = 2, Size = 2, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
+		new BuildingDef { Col = 11, Row = 12, Size = 2, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
+		new BuildingDef { Col = 19, Row = 12, Size = 2, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
 	};
 
 	public override void _Ready()
@@ -91,6 +96,7 @@ public partial class World : Node2D
 		SpawnBuildings();
 		SpawnOres();
 		SpawnCharacter();
+		SetupCamera();
 		// Loaded pets only exist in the save; spawn their nodes on startup too.
 		foreach (var petData in GameManager.Instance.EquippedPets)
 			SpawnPet(petData);
@@ -295,6 +301,45 @@ private void BuildTerrain()
 		objectLayer.AddChild(_characterNode);
 	}
 
+	private void SetupCamera()
+	{
+		_camera = GetNode<Camera2D>("Camera");
+		_camera.LimitLeft = (int)GridToScreen(0, Rows - 1).X - TileW;
+		_camera.LimitRight = (int)GridToScreen(Cols - 1, 0).X + TileW;
+		_camera.LimitTop = (int)GridToScreen(0, 0).Y - TileH * 2;
+		_camera.LimitBottom = (int)GridToScreen(Cols - 1, Rows - 1).Y + TileH * 4;
+		_camera.Position = GridToScreen(CharacterCell.X, CharacterCell.Y);
+		_camera.ResetSmoothing();
+	}
+
+	private void PanCamera(double delta)
+	{
+		var pan = Vector2.Zero;
+		if (Input.IsPhysicalKeyPressed(Key.W) || Input.IsPhysicalKeyPressed(Key.Up)) pan.Y -= 1f;
+		if (Input.IsPhysicalKeyPressed(Key.S) || Input.IsPhysicalKeyPressed(Key.Down)) pan.Y += 1f;
+		if (Input.IsPhysicalKeyPressed(Key.A) || Input.IsPhysicalKeyPressed(Key.Left)) pan.X -= 1f;
+		if (Input.IsPhysicalKeyPressed(Key.D) || Input.IsPhysicalKeyPressed(Key.Right)) pan.X += 1f;
+		if (pan == Vector2.Zero) return;
+
+		pan = pan.Normalized();
+		_camera.Position += pan * PanSpeed * (float)delta / _camera.Zoom.X;
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (@event is not InputEventMouseButton { Pressed: true } mb) return;
+		if (mb.ButtonIndex == MouseButton.WheelUp)
+			SetZoom(_camera.Zoom.X * 1.1f);
+		else if (mb.ButtonIndex == MouseButton.WheelDown)
+			SetZoom(_camera.Zoom.X / 1.1f);
+	}
+
+	private void SetZoom(float zoom)
+	{
+		zoom = Mathf.Clamp(zoom, MinZoom, MaxZoom);
+		_camera.Zoom = new Vector2(zoom, zoom);
+	}
+
 	private string RollOreType()
 	{
 		if (_availableOreTypes.Count == 0) return "";
@@ -343,6 +388,8 @@ private void BuildTerrain()
 
 	public override void _Process(double delta)
 	{
+		PanCamera(delta);
+
 		var objectLayer = GetNode<Node2D>("ObjectLayer");
 		foreach (var child in objectLayer.GetChildren())
 		{

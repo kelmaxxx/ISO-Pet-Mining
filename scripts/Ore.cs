@@ -76,6 +76,7 @@ public partial class Ore : Node2D
 			_hpBar.Visible = true;
 		}
 		Shake();
+		AudioManager.Instance.PlayHit();
 		if (CurrentHp <= 0f) _ = BreakAndRespawn();
 	}
 
@@ -102,6 +103,7 @@ public partial class Ore : Node2D
 			gm.AddGems(amount);
 		else
 			gm.AddCoins(amount);
+		AudioManager.Instance.PlayCoin();
 
 		if (OreType == "meteor")
 			Effects.SpawnBurst(GetParent(), GlobalPosition, new Color(1f, 0.65f, 0.15f), amount: 40, scale: 2f, lifetime: 1.0f);
