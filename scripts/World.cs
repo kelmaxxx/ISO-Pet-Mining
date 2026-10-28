@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 public partial class World : Node2D
 {
-	private const int Cols = 32;
-	private const int Rows = 32;
+	private const int Cols = 24;
+	private const int Rows = 24;
 	private const int TileW = 32;
 	private const int TileH = 16;
 	private const int GridOriginY = 70;
@@ -83,8 +83,8 @@ public partial class World : Node2D
 	// a colored placeholder with the label is shown instead.
 	private static readonly BuildingDef[] BuildingDefs =
 	{
-		new BuildingDef { Col = 11, Row = 12, Size = 2, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
-		new BuildingDef { Col = 19, Row = 12, Size = 2, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
+		new BuildingDef { Col = 9,  Row = 10, Size = 2, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
+		new BuildingDef { Col = 15, Row = 10, Size = 2, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
 	};
 
 	public override void _Ready()
@@ -129,6 +129,15 @@ public partial class World : Node2D
 		return new Vector2(x, y);
 	}
 
+	// Spawn map is a plus-shaped island: the four 8x8 corner blocks are cut out.
+	// Future areas can extend from the open edges instead of growing this grid.
+	private static bool InMap(int col, int row)
+	{
+		const int arm = 8;
+		if (col < 0 || row < 0 || col >= Cols || row >= Rows) return false;
+		return !((col < arm || col >= Cols - arm) && (row < arm || row >= Rows - arm));
+	}
+
 	private Texture2D LoadTerrain(string typeName)
 	{
 		if (_terrainCache.TryGetValue(typeName, out var cached))
@@ -167,6 +176,7 @@ private void BuildTerrain()
 		{
 			for (int col = 0; col < Cols; col++)
 			{
+				if (!InMap(col, row)) continue;
 				string typeName = WeightedRandom(tileTypes, weights);
 				var tex = ResolveTerrain(typeName);
 				if (tex == null) continue;
@@ -191,6 +201,7 @@ private void BuildTerrain()
 			for (int col = 0; col < Cols; col++)
 			{
 				var cell = new Vector2I(col, row);
+				if (!InMap(col, row)) continue;
 				if (_occupiedCells.Contains(cell)) continue;
 				if (GD.Randf() >= 0.35f) continue;
 
@@ -273,7 +284,7 @@ private void BuildTerrain()
 			for (int col = 0; col < Cols; col++)
 			{
 				var cell = new Vector2I(col, row);
-				if (!_occupiedCells.Contains(cell))
+				if (InMap(col, row) && !_occupiedCells.Contains(cell))
 					freeCells.Add(cell);
 			}
 
@@ -432,7 +443,7 @@ private void BuildTerrain()
 			for (int col = 0; col < Cols; col++)
 			{
 				var cell = new Vector2I(col, row);
-				if (!_occupiedCells.Contains(cell))
+				if (InMap(col, row) && !_occupiedCells.Contains(cell))
 					freeCells.Add(cell);
 			}
 		}

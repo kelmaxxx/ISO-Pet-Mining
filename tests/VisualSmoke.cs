@@ -16,6 +16,11 @@ public partial class VisualSmoke : Node
 		var size = GetTree().Root.ContentScaleSize;
 		Check(size == new Vector2I(640, 360), $"internal viewport is 640x360 (got {size.X}x{size.Y})");
 
+		int writes = GameManager.Instance.SaveWrites;
+		GameManager.Instance.AddCoins(1);
+		Check(GameManager.Instance.SaveWrites == writes,
+			"coin changes don't write the save immediately");
+
 		var world = GD.Load<PackedScene>("res://scenes/World.tscn").Instantiate<Node2D>();
 		AddChild(world);
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
@@ -70,8 +75,8 @@ public partial class VisualSmoke : Node
 
 		var distinctTiles = new HashSet<ulong>();
 		var tileLayer = world.GetNode<Node2D>("TileLayer");
-		Check(tileLayer.GetChildCount() == 32 * 32,
-			$"map expanded to 32x32 ({tileLayer.GetChildCount()} tiles)");
+		Check(tileLayer.GetChildCount() == 320,
+			$"map is the 320-tile plus island ({tileLayer.GetChildCount()} tiles)");
 		foreach (var tile in tileLayer.GetChildren())
 		{
 			if (tile is not Sprite2D { Texture: not null } s) continue;

@@ -48,6 +48,7 @@ public partial class GameManager : Node
 	private const string SavePath = "user://save.json";
 	public const long MaxOfflineSeconds = 10 * 60 * 60; // 10h cap on idle payout
 	public int OfflineEarnings { get; private set; } = 0;
+	public int SaveWrites { get; private set; } = 0;
 
 	// Pets earn their normal idle rate while the game is closed, capped so a
 	// long absence can't hand out an unbounded pile of coins.
@@ -59,6 +60,8 @@ public partial class GameManager : Node
 
 	public void SaveGame()
 	{
+		SaveWrites++;
+
 		// Serialize pets as a plain list of string-keyed dicts so JSON can handle them.
 		var petsData = new List<System.Collections.Generic.Dictionary<string, object>>();
 		foreach (var pet in EquippedPets)
@@ -89,59 +92,72 @@ public partial class GameManager : Node
 	public void LoadGame()
 	{
 		if (!FileAccess.FileExists(SavePath)) return;
-		using var file = FileAccess.Open(SavePath, FileAccess.ModeFlags.Read);
-		string json = file.GetAsText();
-		var data = JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, JsonElement>>(json);
-		if (data == null) return;
 
-		if (data.TryGetValue("coins", out var c))          Coins          = c.GetInt32();
-		if (data.TryGetValue("gems",  out var g))          Gems           = g.GetInt32();
-		if (data.TryGetValue("prestige_level", out var pl)) PrestigeLevel = pl.GetInt32();
-		if (data.TryGetValue("prestige_cost",  out var pc)) PrestigeCost  = pc.GetInt32();
-		if (data.TryGetValue("speed_level",    out var sl)) SpeedLevel    = sl.GetInt32();
-		if (data.TryGetValue("max_pets_level", out var mpl)) MaxPetsLevel = mpl.GetInt32();
-
-		if (data.TryGetValue("pets", out var petsEl) && petsEl.ValueKind == JsonValueKind.Array)
+		try
 		{
-			EquippedPets.Clear();
-			foreach (var petEl in petsEl.EnumerateArray())
+			using var file = FileAccess.Open(SavePath, FileAccess.ModeFlags.Read);
+			string json = file.GetAsText();
+			var data = JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, JsonElement>>(json);
+			if (data == null) return;
+
+			if (data.TryGetValue("coins", out var c))          Coins          = c.GetInt32();
+			if (data.TryGetValue("gems",  out var g))          Gems           = g.GetInt32();
+			if (data.TryGetValue("prestige_level", out var pl)) PrestigeLevel = pl.GetInt32();
+			if (data.TryGetValue("prestige_cost",  out var pc)) PrestigeCost  = pc.GetInt32();
+			if (data.TryGetValue("speed_level",    out var sl)) SpeedLevel    = sl.GetInt32();
+			if (data.TryGetValue("max_pets_level", out var mpl)) MaxPetsLevel = mpl.GetInt32();
+
+			if (data.TryGetValue("pets", out var petsEl) && petsEl.ValueKind == JsonValueKind.Array)
 			{
-				var pet = new Dictionary();
-				foreach (var prop in petEl.EnumerateObject())
+				EquippedPets.Clear();
+				foreach (var petEl in petsEl.EnumerateArray())
 				{
-					switch (prop.Value.ValueKind)
+					var pet = new Dictionary();
+					foreach (var prop in petEl.EnumerateObject())
 					{
-						case JsonValueKind.Number: pet[prop.Name] = prop.Value.GetSingle(); break;
-						default:                   pet[prop.Name] = prop.Value.GetString(); break;
+						switch (prop.Value.ValueKind)
+						{
+							case JsonValueKind.Number: pet[prop.Name] = prop.Value.GetSingle(); break;
+							default:                   pet[prop.Name] = prop.Value.GetString(); break;
+						}
 					}
+					EquippedPets.Add(pet);
 				}
-				EquippedPets.Add(pet);
 			}
-		}
 
-		// Old saves have no timestamp: the first run of this feature earns nothing.
-		OfflineEarnings = 0;
-		if (data.TryGetValue("last_saved_timestamp", out var tsEl))
+			// Old saves have no timestamp: the first run of this feature earns nothing.
+			OfflineEarnings = 0;
+			if (data.TryGetValue("last_saved_timestamp", out var tsEl))
+			{
+				long secondsAway = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - tsEl.GetInt64();
+				OfflineEarnings = CalculateOfflineCoins(GetPetDps(), secondsAway);
+				Coins += OfflineEarnings;
+			}
+
+			EmitSignal(SignalName.CoinsChanged, Coins);
+			EmitSignal(SignalName.GemsChanged, Gems);
+			EmitSignal(SignalName.PrestigeChanged, PrestigeLevel, PrestigeMultiplier, PrestigeCost);
+			EmitSignal(SignalName.SpeedLevelChanged, SpeedLevel, GetSpeedUpgradeCost());
+			EmitSignal(SignalName.MaxPetsLevelChanged, MaxPetsLevel, GetMaxPetsUpgradeCost());
+			// Stamp the save now that the offline payout is banked, so a reload can't claim it again.
+			if (OfflineEarnings > 0)
+				SaveGame();
+			GD.Print($"[GameManager] Save loaded — coins:{Coins} gems:{Gems} prestige:{PrestigeLevel} pets:{EquippedPets.Count}");
+		}
+		catch (Exception e)
 		{
-			long secondsAway = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - tsEl.GetInt64();
-			OfflineEarnings = CalculateOfflineCoins(GetPetDps(), secondsAway);
-			Coins += OfflineEarnings;
+			GD.PushWarning($"[GameManager] Could not read save, starting fresh: {e.Message}");
 		}
-
-		EmitSignal(SignalName.CoinsChanged, Coins);
-		EmitSignal(SignalName.GemsChanged, Gems);
-		EmitSignal(SignalName.PrestigeChanged, PrestigeLevel, PrestigeMultiplier, PrestigeCost);
-		EmitSignal(SignalName.SpeedLevelChanged, SpeedLevel, GetSpeedUpgradeCost());
-		EmitSignal(SignalName.MaxPetsLevelChanged, MaxPetsLevel, GetMaxPetsUpgradeCost());
-		// Stamp the save now that the offline payout is banked, so a reload can't claim it again.
-		if (OfflineEarnings > 0)
-			SaveGame();
-		GD.Print($"[GameManager] Save loaded — coins:{Coins} gems:{Gems} prestige:{PrestigeLevel} pets:{EquippedPets.Count}");
 	}
 
 	// ── Idle Income ───────────────────────────────────────────────────────────
 	// Pets passively earn coins over time even when the player is not clicking.
 	private double _idleAccum = 0.0;
+
+	// Writes are batched instead of happening on every coin change. Critical
+	// events (prestige, purchases, quit) still save immediately.
+	private const double AutosaveSeconds = 30.0;
+	private double _autosaveAccum = 0.0;
 
 	public override void _Process(double delta)
 	{
@@ -151,8 +167,21 @@ public partial class GameManager : Node
 			_idleAccum -= 1.0;
 			float earned = GetPetDps();
 			if (earned > 0f)
-				AddCoins((int)earned);   // AddCoins already fires CoinsChanged + autosave
+				AddCoins((int)earned);
 		}
+
+		_autosaveAccum += delta;
+		if (_autosaveAccum >= AutosaveSeconds)
+		{
+			_autosaveAccum = 0.0;
+			SaveGame();
+		}
+	}
+
+	public override void _Notification(int what)
+	{
+		if (what == NotificationWMCloseRequest || what == NotificationApplicationPaused)
+			SaveGame();
 	}
 
 	public override void _Ready()
@@ -168,14 +197,12 @@ public partial class GameManager : Node
 		int mult = (CoinBoost && Now() < CoinBoostEnd) ? 2 : 1;
 		Coins += amount * mult;
 		EmitSignal(SignalName.CoinsChanged, Coins);
-		SaveGame();
 	}
 
 	public void AddGems(int amount)
 	{
 		Gems += amount;
 		EmitSignal(SignalName.GemsChanged, Gems);
-		SaveGame();
 	}
 
 	public bool SpendCoins(int amount)
@@ -184,7 +211,6 @@ public partial class GameManager : Node
 		{
 			Coins -= amount;
 			EmitSignal(SignalName.CoinsChanged, Coins);
-			SaveGame();
 			return true;
 		}
 		return false;
@@ -196,7 +222,6 @@ public partial class GameManager : Node
 		{
 			Gems -= amount;
 			EmitSignal(SignalName.GemsChanged, Gems);
-			SaveGame();
 			return true;
 		}
 		return false;
