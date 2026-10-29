@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 public partial class World : Node2D
 {
-	private const int Cols = 24;
-	private const int Rows = 24;
+	private const int Cols = 10;
+	private const int Rows = 10;
 	private const int TileW = 32;
 	private const int TileH = 16;
 	private const int GridOriginY = 70;
@@ -50,7 +50,8 @@ public partial class World : Node2D
 	// Tracks which grid cells are taken (buildings, character, live ores) so
 	// ores never respawn on top of something.
 	private readonly HashSet<Vector2I> _occupiedCells = new();
-	private static readonly Vector2I CharacterCell = new(Cols / 2, Rows / 2);
+	// One tile in front of the central spawn tower (2x2 at 4,4).
+	private static readonly Vector2I CharacterCell = new(Cols / 2, Rows / 2 + 1);
 
 	private double _meteorTimer = 0.0;
 	private double _nextMeteorTime = 0.0;
@@ -75,8 +76,8 @@ public partial class World : Node2D
 	// a colored placeholder with the label is shown instead.
 	private static readonly BuildingDef[] BuildingDefs =
 	{
-		new BuildingDef { Col = 9,  Row = 10, Size = 2, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
-		new BuildingDef { Col = 15, Row = 10, Size = 2, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
+		new BuildingDef { Col = 1, Row = 4, Size = 2, Type = "shop",     Label = "Shop",     Texture = "res://assets/buildings/shop.png",     Color = new Color(0.40f, 0.35f, 0.62f) },
+		new BuildingDef { Col = 7, Row = 4, Size = 2, Type = "hatchery", Label = "Hatchery", Texture = "res://assets/buildings/hatchery.png", Color = new Color(0.62f, 0.45f, 0.30f) },
 	};
 
 	public override void _Ready()
@@ -86,6 +87,7 @@ public partial class World : Node2D
 		BuildAvailableOreTypes();
 		BuildTerrain();
 		SpawnBuildings();
+		SpawnSpawnTower();
 		SpawnOres();
 		SpawnCharacter();
 		SetupCamera();
@@ -121,11 +123,11 @@ public partial class World : Node2D
 		return new Vector2(x, y);
 	}
 
-	// Spawn map is a plus-shaped island: the four 8x8 corner blocks are cut out.
-	// Future areas can extend from the open edges instead of growing this grid.
+	// Spawn map is a plus-shaped island: the four 3x3 corner blocks are cut out
+	// (64 tiles). Future areas can extend from the open edges.
 	private static bool InMap(int col, int row)
 	{
-		const int arm = 8;
+		const int arm = 3;
 		if (col < 0 || row < 0 || col >= Cols || row >= Rows) return false;
 		return !((col < arm || col >= Cols - arm) && (row < arm || row >= Rows - arm));
 	}
@@ -142,6 +144,7 @@ public partial class World : Node2D
 
 		// One shared lit texture: every tile is grass and lighting wraps it once.
 		var texture = Lighting.GetLitTexture(grass);
+		BuildIslandShadow(grass);
 		for (int row = 0; row < Rows; row++)
 		{
 			for (int col = 0; col < Cols; col++)
@@ -157,6 +160,61 @@ public partial class World : Node2D
 				});
 			}
 		}
+	}
+
+	// The island is a raised block, so it casts a soft shadow into the void.
+	// One blurred silhouette of every tile, offset down-right, drawn behind all.
+	private void BuildIslandShadow(Texture2D grass)
+	{
+		Image src = grass.GetImage();
+		if (src == null) return;
+		if (src.IsCompressed()) src.Decompress();
+
+		int minX = (int)GridToScreen(0, Rows - 1).X - TileW / 2;
+		int minY = (int)GridToScreen(0, 0).Y - TileH / 2;
+		int maxX = (int)GridToScreen(Cols - 1, 0).X + TileW / 2;
+		int maxY = (int)GridToScreen(Cols - 1, Rows - 1).Y + TileH + TileH / 2;
+		const int margin = 16;
+		int w = maxX - minX + margin * 2;
+		int h = maxY - minY + margin * 2;
+
+		// Union of every tile's alpha, in screen space.
+		var mask = new float[w, h];
+		int tw = src.GetWidth(), th = src.GetHeight();
+		for (int row = 0; row < Rows; row++)
+			for (int col = 0; col < Cols; col++)
+			{
+				if (!InMap(col, row)) continue;
+				Vector2 p = GridToScreen(col, row);
+				int ox = (int)p.X - TileW / 2 - minX + margin;
+				int oy = (int)p.Y - TileH / 2 - minY + margin;
+				for (int y = 0; y < th; y++)
+					for (int x = 0; x < tw; x++)
+					{
+						float a = src.GetPixel(x, y).A;
+						if (a > mask[ox + x, oy + y]) mask[ox + x, oy + y] = a;
+					}
+			}
+
+		mask = Lighting.Blur(mask, w, h);
+		mask = Lighting.Blur(mask, w, h);
+		mask = Lighting.Blur(mask, w, h);
+
+		var img = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+				img.SetPixel(x, y, new Color(0f, 0f, 0f, Mathf.Clamp(mask[x, y], 0f, 1f) * 0.7f));
+
+		var shadow = new Sprite2D
+		{
+			Name = "IslandShadow",
+			Texture = ImageTexture.CreateFromImage(img),
+			Centered = false,
+			Position = new Vector2(minX - margin + 4, minY - margin + 10),
+			ZIndex = -1000,
+		};
+		AddChild(shadow);
+		MoveChild(shadow, 0);
 	}
 
 	private void SpawnOres()
@@ -228,6 +286,67 @@ public partial class World : Node2D
 		}
 	}
 
+	// Decorative spawn point: a 2x2 stone tower with a bobbing, glowing orb.
+	private void SpawnSpawnTower()
+	{
+		const int col = 4, row = 4, size = 2;
+		for (int dr = 0; dr < size; dr++)
+			for (int dc = 0; dc < size; dc++)
+				_occupiedCells.Add(new Vector2I(col + dc, row + dr));
+
+		var tower = new Node2D
+		{
+			Name = "SpawnTower",
+			Position = GridToScreen(col + size - 1, row + size - 1),
+		};
+
+		var body = new Sprite2D
+		{
+			Texture = PlaceholderArt.TowerTexture(),
+			Centered = false,
+			Offset = new Vector2(-24, -80),
+		};
+		Lighting.MakeLit(body);
+		tower.AddChild(body);
+		Lighting.AttachDropShadow(tower, 0f, 44f);
+
+		var orb = new Sprite2D
+		{
+			Texture = Lighting.GetGlowTexture(),
+			Position = new Vector2(0, -88),
+			Modulate = new Color(1f, 0.80f, 0.35f, 0.9f),
+			Scale = new Vector2(0.9f, 0.9f),
+			ZIndex = 1,
+		};
+		orb.AddChild(new Sprite2D
+		{
+			Texture = Lighting.GetGlowTexture(),
+			Modulate = new Color(1f, 0.95f, 0.75f),
+			Scale = new Vector2(0.3f, 0.3f),
+			ZIndex = 1,
+		});
+		tower.AddChild(orb);
+
+		tower.AddChild(new PointLight2D
+		{
+			Name = "OrbLight",
+			Texture = Lighting.GetGlowTexture(),
+			Position = orb.Position,
+			Color = new Color(1f, 0.82f, 0.45f),
+			Energy = 1.5f,
+			TextureScale = 3.0f,
+		});
+
+		// Gentle float, so the orb reads as alive rather than a static lamp.
+		var tween = CreateTween().SetLoops();
+		tween.TweenProperty(orb, "position:y", -92f, 1.4f)
+			.SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+		tween.TweenProperty(orb, "position:y", -84f, 1.4f)
+			.SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+
+		GetNode<Node2D>("ObjectLayer").AddChild(tower);
+	}
+
 	private void OnBuildingClicked(string buildingType)
 	{
 		var hud = GetNodeOrNull<HUD>("UI/HUD");
@@ -272,7 +391,7 @@ public partial class World : Node2D
 		_characterNode = CharacterScene.Instantiate<Node>();
 		if (_characterNode is Node2D node2d)
 		{
-			node2d.Position = GridToScreen(Cols / 2, Rows / 2);
+			node2d.Position = GridToScreen(CharacterCell.X, CharacterCell.Y);
 			node2d.ZIndex = 999;
 		}
 		objectLayer.AddChild(_characterNode);
@@ -387,8 +506,12 @@ public partial class World : Node2D
 		if (!ResourceLoader.Exists("res://scenes/Pet.tscn"))
 			return;
 		var pet = PetScene.Instantiate<Pet>();
-		int col = Cols / 2 + (int)GD.RandRange(-2, 2);
-		int row = Rows / 2 + (int)GD.RandRange(-2, 2);
+		int col, row;
+		do
+		{
+			col = Cols / 2 + (int)GD.RandRange(-2, 2);
+			row = Rows / 2 + (int)GD.RandRange(-2, 2);
+		} while (!InMap(col, row)); // small map: the +-2 box reaches the cut corners
 		pet.Position = GridToScreen(col, row);
 		GetNode<Node2D>("ObjectLayer").AddChild(pet);
 		pet.AddToGroup("pets");

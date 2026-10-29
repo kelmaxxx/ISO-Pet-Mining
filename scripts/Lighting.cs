@@ -29,6 +29,7 @@ public static class Lighting
 
 	private static readonly Dictionary<ulong, CanvasTexture> _litCache = new();
 	private static Texture2D _shadowTex;
+	private static Texture2D _glowTex;
 
 	// -------------------------------------------------------------------------
 	// World setup: ambient + sun. Call once from World._Ready().
@@ -197,7 +198,7 @@ public static class Lighting
 	}
 
 	// Separable 5-tap blur, edges clamped. Feeds broad shading into the normals.
-	private static float[,] Blur(float[,] src, int w, int h)
+	public static float[,] Blur(float[,] src, int w, int h)
 	{
 		int[] taps = { 1, 4, 6, 4, 1 };
 		const float sum = 16f;
@@ -271,5 +272,24 @@ public static class Lighting
 		}
 		_shadowTex = ImageTexture.CreateFromImage(img);
 		return _shadowTex;
+	}
+
+	// Soft white radial falloff, used for the tower orb and its PointLight2D.
+	public static Texture2D GetGlowTexture()
+	{
+		if (_glowTex != null) return _glowTex;
+
+		const int s = 64;
+		var img = Image.CreateEmpty(s, s, false, Image.Format.Rgba8);
+		float c = (s - 1) / 2f;
+		for (int y = 0; y < s; y++)
+			for (int x = 0; x < s; x++)
+			{
+				float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c)) / c;
+				float a = Mathf.Clamp(1f - d, 0f, 1f);
+				img.SetPixel(x, y, new Color(1f, 1f, 1f, a * a));
+			}
+		_glowTex = ImageTexture.CreateFromImage(img);
+		return _glowTex;
 	}
 }
