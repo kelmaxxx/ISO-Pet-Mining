@@ -19,7 +19,7 @@ using System.Collections.Generic;
 public static class Lighting
 {
 	// Normal-map generation.
-	private const float NormalStrength = 2.2f; // bump intensity (raise for more relief)
+	private const float NormalStrength = 4.0f; // bump intensity (raise for more relief)
 	private const float NormalYSign = 1.0f;    // flip to -1 if relief looks inverted
 
 	// Drop shadow.
@@ -65,6 +65,9 @@ public static class Lighting
 		{
 			DiffuseTexture = diffuse,
 			NormalTexture = normal,
+			SpecularTexture = GenerateSpecularMap(diffuse),
+			SpecularColor = Colors.White,
+			SpecularShininess = 12f,
 		};
 		_litCache[key] = ct;
 		return ct;
@@ -138,6 +141,13 @@ public static class Lighting
 			}
 		}
 
+		// Blend a blurred copy in: painted pixel-art shading is a broad gradient,
+		// and per-pixel gradients alone only catch outlines (flat interiors).
+		float[,] smooth = Blur(height, w, h);
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+				height[x, y] = height[x, y] * 0.35f + smooth[x, y] * 0.65f;
+
 		var normalImg = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
 		for (int y = 0; y < h; y++)
 		{
@@ -162,6 +172,56 @@ public static class Lighting
 		}
 
 		return ImageTexture.CreateFromImage(normalImg);
+	}
+
+	// Bright pixels reflect more: metal, gems and highlights glint under the sun.
+	private static ImageTexture GenerateSpecularMap(Texture2D source)
+	{
+		Image img = source.GetImage();
+		if (img == null) return null;
+		if (img.IsCompressed())
+			img.Decompress();
+
+		int w = img.GetWidth();
+		int h = img.GetHeight();
+		var specImg = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+			{
+				Color c = img.GetPixel(x, y);
+				float lum = 0.299f * c.R + 0.587f * c.G + 0.114f * c.B;
+				float spec = Mathf.Pow(lum, 3f);
+				specImg.SetPixel(x, y, new Color(spec, spec, spec, c.A));
+			}
+		return ImageTexture.CreateFromImage(specImg);
+	}
+
+	// Separable 5-tap blur, edges clamped. Feeds broad shading into the normals.
+	private static float[,] Blur(float[,] src, int w, int h)
+	{
+		int[] taps = { 1, 4, 6, 4, 1 };
+		const float sum = 16f;
+		var tmp = new float[w, h];
+		var dst = new float[w, h];
+
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+			{
+				float acc = 0f;
+				for (int k = -2; k <= 2; k++)
+					acc += src[Mathf.Clamp(x + k, 0, w - 1), y] * taps[k + 2];
+				tmp[x, y] = acc / sum;
+			}
+
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+			{
+				float acc = 0f;
+				for (int k = -2; k <= 2; k++)
+					acc += tmp[x, Mathf.Clamp(y + k, 0, h - 1)] * taps[k + 2];
+				dst[x, y] = acc / sum;
+			}
+		return dst;
 	}
 
 	// -------------------------------------------------------------------------

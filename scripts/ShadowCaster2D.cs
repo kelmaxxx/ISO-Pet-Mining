@@ -6,9 +6,9 @@ using Godot;
 public partial class ShadowCaster2D : Node2D
 {
 	[Export] public Vector2 GroundOffset = Vector2.Zero;
-	[Export] public float Opacity = 0.32f;
-	[Export] public float Flatten = 0.35f;
-	[Export] public float Length = 8f;
+	[Export] public float Opacity = 0.4f;
+	[Export] public float Flatten = 0.5f;
+	[Export] public float Length = 12f;
 
 	// Set before adding to the tree, or leave null to use the first sprite sibling.
 	public Node2D Source { get; set; }
