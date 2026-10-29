@@ -8,12 +8,12 @@ public partial class DayNightCycle : Node2D
 	[Export(PropertyHint.Range, "0,1,0.01")] public float StartTime = 0.5f;
 	[Export(PropertyHint.Range, "10,3600,10")] public float CycleSeconds = 300f;
 
-	private const float SunHeight = 0.55f;
-	private const float MinSunEnergy = 0.10f; // faint moon fill, keeps art readable
-	private const float DaySunEnergy = 0.28f;
+	private const float SunHeight = 0.30f;
+	private const float MinSunEnergy = 0.12f; // faint moon fill, keeps art readable
+	private const float DaySunEnergy = 0.70f;
 
-	private static readonly Color DayAmbient = new(0.78f, 0.78f, 0.84f);
-	private static readonly Color NightAmbient = new(0.36f, 0.42f, 0.58f);
+	private static readonly Color DayAmbient = new(0.45f, 0.46f, 0.52f);
+	private static readonly Color NightAmbient = new(0.30f, 0.35f, 0.50f);
 	private static readonly Color DayColor = new(1.0f, 0.97f, 0.90f);
 	private static readonly Color DuskColor = new(1.0f, 0.62f, 0.38f);
 	private static readonly Color MoonColor = new(0.55f, 0.70f, 1.0f);

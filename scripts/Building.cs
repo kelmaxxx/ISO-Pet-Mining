@@ -14,6 +14,8 @@ public partial class Building : Node2D
 	private ColorRect _placeholder;
 	private Label _nameLabel;
 	private Area2D _clickArea;
+	private ShadowCaster2D _shadow;
+	private bool _hasFallbackShadow;
 
 	public override void _Ready()
 	{
@@ -24,9 +26,6 @@ public partial class Building : Node2D
 
 		_clickArea.InputPickable = true;
 		_clickArea.InputEvent += OnClick;
-
-		// Soft shadow under the building footprint.
-		Lighting.AttachDropShadow(this, 0f, 46f);
 	}
 
 	// Called by World right after the building is added to the scene.
@@ -42,12 +41,23 @@ public partial class Building : Node2D
 			_sprite.Texture = Lighting.GetLitTexture(GD.Load<Texture2D>(texturePath));
 			_sprite.Visible = true;
 			_placeholder.Visible = false;
+
+			// Same flattened replica trick as actors, anchored at the footprint base.
+			_shadow ??= ShadowCaster2D.Attach(this, _sprite, new Vector2(0f, 6f));
+			_shadow.Refresh();
 		}
 		else
 		{
 			_sprite.Visible = false;
 			_placeholder.Visible = true;
 			_placeholder.Color = placeholderColor;
+
+			// No texture to copy, so fall back to a soft blob under the footprint.
+			if (!_hasFallbackShadow)
+			{
+				Lighting.AttachDropShadow(this, 0f, 46f);
+				_hasFallbackShadow = true;
+			}
 		}
 	}
 
