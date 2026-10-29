@@ -19,6 +19,7 @@ public static class PlaceholderArt
 
 	private static SpriteFrames _character;
 	private static Texture2D _meteor;
+	private static Texture2D _tower;
 	private static readonly Dictionary<string, SpriteFrames> _pets = new();
 
 	// ------------------------------------------------------------- character --
@@ -247,6 +248,49 @@ public static class PlaceholderArt
 				Rect(img, x + 5, 10 + y, 3, 7, new Color(1f, 0.85f, 0.35f));
 				break;
 		}
+	}
+
+	// ---------------------------------------------------------------- tower --
+	// 48x80 stone spawn tower, drawn bottom-centre so World can anchor it on
+	// the front corner of its 2x2 footprint.
+	public static Texture2D TowerTexture()
+	{
+		if (_tower != null) return _tower;
+
+		var img = Image.CreateEmpty(48, 80, false, Image.Format.Rgba8);
+		var stone = new Color(0.58f, 0.60f, 0.68f);
+		var stoneDark = new Color(0.40f, 0.42f, 0.50f);
+		var stoneLight = new Color(0.72f, 0.74f, 0.82f);
+		var gold = new Color(1f, 0.80f, 0.30f);
+
+		Rect(img, 2, 70, 44, 10, Outline);
+		Rect(img, 4, 71, 40, 7, stoneDark);
+
+		Rect(img, 9, 26, 30, 45, Outline);
+		Rect(img, 11, 27, 26, 43, stone);
+		Rect(img, 30, 27, 7, 43, stoneDark);
+		for (int y = 36; y < 68; y += 10)
+			Rect(img, 11, y, 26, 1, stoneDark);
+
+		Rect(img, 5, 18, 38, 9, Outline);
+		Rect(img, 7, 19, 34, 6, stoneLight);
+		for (int x = 6; x <= 34; x += 14)
+		{
+			Rect(img, x, 10, 9, 9, Outline);
+			Rect(img, x + 1, 11, 7, 7, stoneLight);
+		}
+
+		Rect(img, 19, 58, 10, 14, Outline);
+		Ellipse(img, 24, 58, 5, 5, Outline);
+		Rect(img, 21, 60, 6, 12, new Color(0.12f, 0.11f, 0.16f));
+		Ellipse(img, 24, 60, 3, 3, new Color(0.12f, 0.11f, 0.16f));
+
+		Rect(img, 11, 31, 26, 2, gold);
+		Rect(img, 22, 44, 4, 7, Outline);
+		Rect(img, 23, 45, 2, 5, gold);
+
+		_tower = ImageTexture.CreateFromImage(img);
+		return _tower;
 	}
 
 	// --------------------------------------------------------------- meteor --

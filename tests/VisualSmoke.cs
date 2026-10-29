@@ -116,8 +116,13 @@ public partial class VisualSmoke : Node
 
 		var distinctTiles = new HashSet<ulong>();
 		var tileLayer = world.GetNode<Node2D>("TileLayer");
-		Check(tileLayer.GetChildCount() == 320,
-			$"map is the 320-tile plus island ({tileLayer.GetChildCount()} tiles)");
+		Check(tileLayer.GetChildCount() == 64,
+			$"map is the 64-tile plus island ({tileLayer.GetChildCount()} tiles)");
+		Check(world.GetNodeOrNull<Sprite2D>("IslandShadow")?.Texture != null,
+			"island casts a soft shadow");
+		var tower = objectLayer.GetNodeOrNull<Node2D>("SpawnTower");
+		Check(tower?.GetNodeOrNull<PointLight2D>("OrbLight") != null,
+			"spawn tower has a lit orb");
 		bool tilesFillCells = true;
 		foreach (var tile in tileLayer.GetChildren())
 		{
