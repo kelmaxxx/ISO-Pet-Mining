@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://d3esb2i8c21b4" path="res://scripts/World.cs" id="1_world_script"]
 [ext_resource type="PackedScene" uid="uid://dcc0bp1gjlt7l" path="res://scenes/HUD.tscn" id="2_hud_scene"]
+[ext_resource type="TileSet" path="res://assets/terrain/terrain_grass_tileset.tres" id="3_terrain_tileset"]
 
 [node name="World" type="Node2D" unique_id=668549661]
 script = ExtResource("1_world_script")
@@ -19,6 +20,10 @@ mouse_filter = 2
 color = Color(0.0784, 0.105, 0.149, 1)
 
 [node name="TileLayer" type="Node2D" parent="." unique_id=1711674029]
+
+[node name="PaintedTiles" type="TileMapLayer" parent="."]
+position = Vector2(304, 62)
+tile_set = ExtResource("3_terrain_tileset")
 
 [node name="ObjectLayer" type="Node2D" parent="." unique_id=507786139]
 y_sort_enabled = true
